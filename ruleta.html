@@ -20,58 +20,37 @@ body {
   flex-direction: column;
 }
 
-/* HEADER */
 #header {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  padding: 10px 0;
-}
-
-#logo {
-  position: absolute;
-  left: 20px;
-  top: 5px;
-}
-
-#logo img {
-  width: 240px;
-  filter:
-    drop-shadow(0 0 10px #f472b6)
-    drop-shadow(0 0 30px #f472b6)
-    drop-shadow(0 0 60px #f472b6);
-}
-
-h1 {
-  margin: 0;
-  font-size: 30px;
-}
-
-/* INFO */
-#infoBox {
-  margin: 5px auto;
-  width: 360px;
   text-align: center;
-  padding: 12px;
-  border-radius: 12px;
-  border: 1px solid #f472b6;
-  background: rgba(30,41,59,0.9);
-  box-shadow: 0 0 20px rgba(244,114,182,0.4);
-  font-size: 14px;
+  padding: 20px 0 10px 0;
 }
 
-#infoBox b { color: #f472b6; }
+h1 { margin: 0; font-size: 30px; }
 
-/* MAIN */
+#infoBox {
+  position: absolute;
+  top: 20px;
+  right: 30px;
+  width: 380px;
+  text-align: center;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid #a78bfa;
+  background: rgba(30,41,59,0.9);
+  box-shadow: 0 0 20px rgba(167,139,250,0.4);
+  font-size: 15px;
+  z-index: 10;
+}
+
 #main {
   flex: 1;
   display: flex;
-  justify-content: space-around;
+  justify-content: center;
   align-items: center;
+  gap: 80px;
+  transform: translateX(80px);
 }
 
-/* PANEL */
 #panel {
   display: flex;
   flex-direction: column;
@@ -89,34 +68,56 @@ textarea {
   resize: none;
 }
 
-/* BOTONES */
 #spinBtn {
   height: 55px;
   font-size: 20px;
-  background: #22c55e;
+  background: #7c3aed;
   border: none;
   border-radius: 12px;
   color: white;
-  box-shadow: 0 0 20px #22c55e;
+  box-shadow: 0 0 20px #7c3aed;
   cursor: pointer;
 }
 
 #elimBtn {
   height: 45px;
-  background: #ef4444;
+  background: #9333ea;
   border: none;
   border-radius: 10px;
   color: white;
-  box-shadow: 0 0 20px #ef4444;
+  box-shadow: 0 0 20px #9333ea;
   cursor: pointer;
 }
 
-/* RULETA */
-#container { position: relative; }
+#joinBtn {
+  height: 45px;
+  background: #8b5cf6;
+  border: none;
+  border-radius: 10px;
+  color: white;
+  box-shadow: 0 0 20px #8b5cf6;
+  cursor: pointer;
+}
+
+#container { 
+  position: relative; 
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#wheelLogo {
+  width: 260px; /* más grande pero sin exagerar */
+  margin-bottom: 18px;
+
+  filter:
+    drop-shadow(0 0 8px #a78bfa)
+    drop-shadow(0 0 18px #7c3aed);
+}
 
 #wheel {
-  width: 550px;
-  height: 550px;
+  width: 480px;
+  height: 480px;
   border-radius: 50%;
   border: 8px solid white;
   position: relative;
@@ -126,15 +127,14 @@ textarea {
 
 #pointer {
   position: absolute;
-  top: 50%;
-  left: -18px;
+  top: 60%;
+  left: calc(50% - 240px - 8px - 10px);
   transform: translateY(-50%);
   border-top: 10px solid transparent;
   border-bottom: 10px solid transparent;
-  border-left: 20px solid #22c55e;
+  border-left: 20px solid #8b5cf6;
 }
 
-/* RESULTADO */
 #resultBox {
   position: fixed;
   top: 0;
@@ -156,208 +156,201 @@ textarea {
   padding: 30px 50px;
   border-radius: 12px;
   font-size: 26px;
-  box-shadow: 0 0 30px #f472b6;
 }
 </style>
-
 </head>
+
 <body>
 
 <div id="header">
-  <div id="logo">
-    <img src="logoshifu.png">
-  </div>
   <h1>Ruleta de BAN - Zidoshifu</h1>
 </div>
 
 <div id="infoBox">
-  Para participar necesitas seguirme<br>
-  Escribe <b>!BAN</b> en el chat para añadirte a la ruleta<br>
-  Mucha suerte
+  Escribe <b>!BAN</b> en el chat para unirte
 </div>
 
 <div id="main">
 
-  <div id="panel">
-    <textarea id="listInput" placeholder="Escribe nombres (uno por línea)"></textarea>
-    <button id="spinBtn" onclick="spin()">GIRAR</button>
-    <button id="elimBtn" onclick="toggleElimination()">ELIMINACIÓN: OFF</button>
-  </div>
+<div id="container">
+  <img id="wheelLogo" src="logoshifu.png">
+  <div id="pointer"></div>
+  <div id="wheel"></div>
+</div>
 
-  <div id="container">
-    <div id="pointer"></div>
-    <div id="wheel"></div>
-  </div>
+<div id="panel">
+  <textarea id="listInput"></textarea>
+  <button id="spinBtn" onclick="spin()">GIRAR</button>
+  <button id="elimBtn" onclick="toggleElimination()">ELIMINACIÓN: OFF</button>
+  <button id="joinBtn" onclick="toggleJoin()">UNIRSE: ON</button>
+</div>
 
 </div>
 
-<div id="resultBox">
-  <div id="resultText"></div>
-</div>
+<div id="resultBox"><div id="resultText"></div></div>
 
 <script>
-
-// 🔥 FIREBASE CONFIG
 const firebaseConfig = {
   apiKey: "X",
-  authDomain: "X",
-  databaseURL: "https://ruleta-211c5-default-rtdb.firebaseio.com",
-  projectId: "ruleta"
+  databaseURL: "https://ruleta-211c5-default-rtdb.firebaseio.com"
 };
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// 🔥 CONTROL LOOP
+let players = [];
+let currentRotation = 0;
+let spinning = false;
+let eliminationMode = false;
+let joinEnabled = true;
 let updatingFromFirebase = false;
 
+const wheel = document.getElementById("wheel");
+const input = document.getElementById("listInput");
 
-// 🔥 FIREBASE → WEB
-db.ref("players").on("value", snapshot => {
-  const data = snapshot.val() || [];
+const colors = ["#2e1065","#4c1d95","#5b21b6","#6d28d9","#7c3aed","#8b5cf6","#a78bfa","#c4b5fd"];
+
+// 🔥 PLAYERS
+db.ref("players").on("value", snap => {
+  const data = snap.val() || [];
 
   updatingFromFirebase = true;
 
+  if (!joinEnabled && data.length > players.length) {
+    updatingFromFirebase = false;
+    return;
+  }
+
   players = data;
   input.value = players.join("\n");
-
   drawWheel();
 
   updatingFromFirebase = false;
 });
 
+// 🔥 JOIN BUTTON FIX
+db.ref("joinEnabled").on("value", snap => {
+  joinEnabled = snap.val() ?? true;
 
-const wheel = document.getElementById("wheel");
-const input = document.getElementById("listInput");
+  const btn = document.getElementById("joinBtn");
 
-let players = [];
-let currentRotation = 0;
-let spinning = false;
-let eliminationMode = false;
+  btn.innerText = joinEnabled ? "UNIRSE: ON" : "UNIRSE: OFF";
+  btn.style.background = joinEnabled ? "#8b5cf6" : "#9333ea";
+});
 
-const colors = ["#ef4444","#3b82f6","#22c55e","#eab308","#a855f7","#f97316"];
-
-
-// 🔥 MODIFICADO (SYNC)
 input.addEventListener("input", () => {
-
   if (updatingFromFirebase) return;
 
-  players = input.value.split("\n").map(x => x.trim()).filter(x => x);
-
+  players = input.value.split("\n").filter(x => x);
   drawWheel();
-
-  // 🔥 WEB → FIREBASE
   db.ref("players").set(players);
 });
 
+function toggleJoin(){
+  joinEnabled = !joinEnabled;
 
-function drawWheel() {
-  if (!players.length) {
-    wheel.innerHTML = "";
-    wheel.style.background = "transparent";
+  const btn = document.getElementById("joinBtn");
+  btn.innerText = joinEnabled ? "UNIRSE: ON" : "UNIRSE: OFF";
+  btn.style.background = joinEnabled ? "#8b5cf6" : "#9333ea";
+
+  db.ref("joinEnabled").set(joinEnabled);
+}
+
+function drawWheel(){
+  if(!players.length){
+    wheel.innerHTML="";
+    wheel.style.background="transparent";
     return;
   }
 
   const angle = 360 / players.length;
-  let gradient = "";
+  let gradient="";
 
-  wheel.innerHTML = "";
+  wheel.innerHTML="";
 
-  players.forEach((p, i) => {
-    const start = i * angle;
-    const color = colors[i % colors.length];
+  players.forEach((p,i)=>{
+    const start=i*angle;
+    gradient+=`${colors[i%colors.length]} ${start}deg ${start+angle}deg,`;
 
-    gradient += `${color} ${start}deg ${start + angle}deg,`;
-
-    const text = document.createElement("div");
-    text.innerText = p;
-
-    text.style.position = "absolute";
-    text.style.left = "50%";
-    text.style.top = "50%";
-
-    const angleCenter = start + angle / 2;
-
-    text.style.transform = `
-      rotate(${angleCenter}deg)
-      translate(0, -180px)
-      rotate(90deg)
-    `;
-
-    text.style.color = "white";
-    text.style.fontWeight = "bold";
-    text.style.textAlign = "center";
-    text.style.width = "160px";
-    text.style.marginLeft = "-80px";
-
+    const text=document.createElement("div");
+    text.innerText=p;
+    text.style.position="absolute";
+    text.style.left="50%";
+    text.style.top="50%";
+    text.style.transform=`rotate(${start+angle/2}deg) translate(0,-160px) rotate(90deg)`;
+    text.style.width="140px";
+    text.style.marginLeft="-70px";
+    text.style.textAlign="center";
     wheel.appendChild(text);
   });
 
-  wheel.style.background = `conic-gradient(${gradient.slice(0, -1)})`;
+  wheel.style.background=`conic-gradient(${gradient.slice(0,-1)})`;
 }
 
-
-function toggleElimination() {
+// 🔥 ELIMINATION BUTTON FIX
+function toggleElimination(){
   eliminationMode = !eliminationMode;
+
   const btn = document.getElementById("elimBtn");
 
   btn.innerText = eliminationMode ? "ELIMINACIÓN: ON" : "ELIMINACIÓN: OFF";
-  btn.style.background = eliminationMode ? "#22c55e" : "#ef4444";
+  btn.style.background = eliminationMode ? "#8b5cf6" : "#9333ea";
 }
 
-
-function showResult(text) {
-  const box = document.getElementById("resultBox");
-  const txt = document.getElementById("resultText");
-
-  txt.innerText = text;
+function showResult(t){
+  const box=document.getElementById("resultBox");
+  const txt=document.getElementById("resultText");
+  txt.innerText=t;
   box.classList.add("active");
-
-  setTimeout(() => box.classList.remove("active"), 2500);
+  setTimeout(()=>box.classList.remove("active"),2500);
 }
 
+function spin(){
+  if(!players.length||spinning)return;
 
-function spin() {
-  if (!players.length || spinning) return;
+  spinning=true;
 
-  spinning = true;
+  const btn=document.getElementById("spinBtn");
+  btn.innerText="GIRANDO...";
+  btn.disabled=true;
 
-  const angle = 360 / players.length;
+  const angle=360/players.length;
+  const randomIndex=Math.floor(Math.random()*players.length);
+  const targetAngle=randomIndex*angle+angle/2;
 
-  const randomIndex = Math.floor(Math.random() * players.length);
-  const targetAngle = randomIndex * angle + angle / 2;
+  const finalRotation=currentRotation+360*8+(270-targetAngle);
 
-  const extraSpins = 8;
+  wheel.style.transform=`rotate(${finalRotation}deg)`;
+  currentRotation=finalRotation;
 
-  const finalRotation = currentRotation + (360 * extraSpins) + (270 - targetAngle);
+  setTimeout(()=>{
+    spinning=false;
+    btn.innerText="GIRAR";
+    btn.disabled=false;
 
-  wheel.style.transform = `rotate(${finalRotation}deg)`;
-  currentRotation = finalRotation;
+    const normalized=(currentRotation%360+360)%360;
+    const pointerDeg=(360-normalized+270)%360;
+    const winner=Math.floor(pointerDeg/angle)%players.length;
 
-  setTimeout(() => {
-    spinning = false;
+    if(eliminationMode){
+      showResult("ELIMINADO: "+players[winner]);
 
-    const normalized = (currentRotation % 360 + 360) % 360;
-    const pointerDeg = (360 - normalized + 270) % 360;
-    const winner = Math.floor(pointerDeg / angle) % players.length;
-
-    if (eliminationMode) {
-      showResult("ELIMINADO: " + players[winner]);
-      players.splice(winner, 1);
-      input.value = players.join("\n");
+      players.splice(winner,1);
+      input.value=players.join("\n");
       drawWheel();
-
-      // 🔥 ELIMINACIÓN → FIREBASE
       db.ref("players").set(players);
 
-    } else {
-      showResult("GANÓ: " + players[winner]);
+      wheel.style.transition="none";
+      wheel.style.transform="rotate(0deg)";
+      currentRotation=0;
+      wheel.offsetHeight;
+      wheel.style.transition="transform 6s cubic-bezier(0.1,0.8,0.2,1)";
+    }else{
+      showResult("GANÓ: "+players[winner]);
     }
 
-  }, 6000);
+  },6000);
 }
-
 </script>
 
 </body>
