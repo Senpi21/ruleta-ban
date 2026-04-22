@@ -161,7 +161,7 @@ textarea {
 
 #pointer {
   position: absolute;
-  top: 65%;
+  top: 60%;
   left: calc(50% - 240px - 8px - 10px);
   transform: translateY(-50%);
   border-top: 10px solid transparent;
@@ -400,13 +400,41 @@ function drawWheel(){
 
     const text=document.createElement("div");
     text.innerText=p;
+
     text.style.position="absolute";
     text.style.left="50%";
     text.style.top="50%";
     text.style.transform=`rotate(${start+angle/2}deg) translate(0,-160px) rotate(90deg)`;
-    text.style.width="140px";
-    text.style.marginLeft="-70px";
+
+    //  TAMAÑO DINÁMICO SEGÚN LONGITUD + JUGADORES
+    let size = 16;
+
+    // ajuste por longitud
+    if (p.length > 10) size = 14;
+    if (p.length > 14) size = 12;
+    if (p.length > 18) size = 10;
+    if (p.length > 22) size = 9;
+    if (p.length > 26) size = 8;
+
+    // ajuste extra por cantidad de jugadores (esto es clave)
+    if (players.length > 12) size -= 1;
+    if (players.length > 18) size -= 1;
+    if (players.length > 24) size -= 1;
+
+    // límite mínimo
+    if (size < 7) size = 7;
+
+    text.style.fontSize = size + "px";
+
+    text.style.width="120px";
+    text.style.marginLeft="-60px";
     text.style.textAlign="center";
+    text.style.wordWrap="break-word";
+    text.style.whiteSpace="normal";
+    text.style.lineHeight="1.1";
+    text.style.fontWeight="bold";
+    text.style.textShadow="0 0 5px rgba(0,0,0,0.5)";
+
     wheel.appendChild(text);
   });
 
