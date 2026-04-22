@@ -406,7 +406,7 @@ function drawWheel(){
     text.style.top="50%";
     text.style.transform=`rotate(${start+angle/2}deg) translate(0,-160px) rotate(90deg)`;
 
-    //  TAMAÑO DINÁMICO SEGÚN LONGITUD + JUGADORES
+    // 🔥 TAMAÑO DINÁMICO SEGÚN LONGITUD + JUGADORES
     let size = 16;
 
     // ajuste por longitud
@@ -416,7 +416,7 @@ function drawWheel(){
     if (p.length > 22) size = 9;
     if (p.length > 26) size = 8;
 
-    // ajuste extra por cantidad de jugadores (esto es clave)
+    // 🔥 ajuste extra por cantidad de jugadores (esto es clave)
     if (players.length > 12) size -= 1;
     if (players.length > 18) size -= 1;
     if (players.length > 24) size -= 1;
