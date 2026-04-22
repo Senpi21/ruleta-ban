@@ -13,11 +13,46 @@ body {
   margin: 0;
   height: 100vh;
   overflow: hidden;
-  background: #0f172a;
-  color: white;
   font-family: Arial;
   display: flex;
   flex-direction: column;
+  color: white;
+
+  background: linear-gradient(135deg, #0f172a, #1e1b4b, #3b0764);
+  position: relative;
+}
+
+body::before{
+  content:"";
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  opacity:0.08;
+  z-index:-1;
+  background-image: url("https://www.transparenttextures.com/patterns/asanoha.png");
+}
+
+#bgOverlay{
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  pointer-events:none;
+  z-index:-1;
+
+  background:
+    radial-gradient(circle at 20% 30%, rgba(168,85,247,0.25), transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(192,132,252,0.2), transparent 40%);
+
+  animation: glowMove 10s infinite alternate;
+}
+
+@keyframes glowMove{
+  0%{ transform: translate(0,0) scale(1); }
+  100%{ transform: translate(-40px,-30px) scale(1.1); }
 }
 
 #header {
@@ -107,9 +142,8 @@ textarea {
 }
 
 #wheelLogo {
-  width: 260px; /* más grande pero sin exagerar */
+  width: 260px;
   margin-bottom: 18px;
-
   filter:
     drop-shadow(0 0 8px #a78bfa)
     drop-shadow(0 0 18px #7c3aed);
@@ -127,7 +161,7 @@ textarea {
 
 #pointer {
   position: absolute;
-  top: 60%;
+  top: 65%;
   left: calc(50% - 240px - 8px - 10px);
   transform: translateY(-50%);
   border-top: 10px solid transparent;
@@ -157,10 +191,59 @@ textarea {
   border-radius: 12px;
   font-size: 26px;
 }
+
+#cortina{
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background: radial-gradient(circle, #1e1b4b, #0f172a);
+  z-index:9999;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  opacity:0;
+  pointer-events:none;
+  transition: opacity 0.5s ease;
+}
+
+#cortina.activa{
+  opacity:1;
+  pointer-events:auto;
+}
+
+#cortinaLogo{
+  width:320px;
+  margin-bottom:30px;
+  filter:
+    drop-shadow(0 0 20px #a78bfa)
+    drop-shadow(0 0 50px #7c3aed);
+  animation: logoPulse 2s infinite ease-in-out;
+}
+
+#cargandoText{
+  font-size:22px;
+  color:#c084fc;
+  letter-spacing:2px;
+  animation: fadeText 1.5s infinite;
+}
+
+@keyframes logoPulse{
+  50%{ transform: scale(1.15); }
+}
+
+@keyframes fadeText{
+  0%,100%{ opacity:0.3; }
+  50%{ opacity:1; }
+}
 </style>
 </head>
 
 <body>
+
+<div id="bgOverlay"></div>
 
 <div id="header">
   <h1>Ruleta de BAN - Zidoshifu</h1>
@@ -189,6 +272,27 @@ textarea {
 
 <div id="resultBox"><div id="resultText"></div></div>
 
+<button onclick="cambiarRuleta()" style="
+position:fixed;
+bottom:20px;
+left:20px;
+padding:12px 20px;
+background:#7c3aed;
+border:none;
+border-radius:10px;
+color:white;
+box-shadow:0 0 20px #7c3aed;
+cursor:pointer;
+z-index:1000;
+">
+CAMBIAR RULETA
+</button>
+
+<div id="cortina">
+  <img src="logoshifu.png" id="cortinaLogo">
+  <div id="cargandoText">Cargando...</div>
+</div>
+
 <script>
 const firebaseConfig = {
   apiKey: "X",
@@ -204,13 +308,13 @@ let spinning = false;
 let eliminationMode = false;
 let joinEnabled = true;
 let updatingFromFirebase = false;
+let modoRuleta = "ban";
 
 const wheel = document.getElementById("wheel");
 const input = document.getElementById("listInput");
 
 const colors = ["#2e1065","#4c1d95","#5b21b6","#6d28d9","#7c3aed","#8b5cf6","#a78bfa","#c4b5fd"];
 
-// 🔥 PLAYERS
 db.ref("players").on("value", snap => {
   const data = snap.val() || [];
 
@@ -228,15 +332,37 @@ db.ref("players").on("value", snap => {
   updatingFromFirebase = false;
 });
 
-// 🔥 JOIN BUTTON FIX
 db.ref("joinEnabled").on("value", snap => {
   joinEnabled = snap.val() ?? true;
 
   const btn = document.getElementById("joinBtn");
-
   btn.innerText = joinEnabled ? "UNIRSE: ON" : "UNIRSE: OFF";
   btn.style.background = joinEnabled ? "#8b5cf6" : "#9333ea";
 });
+
+db.ref("modoRuleta").on("value", snap => {
+  const modo = snap.val() || "ban";
+  modoRuleta = modo;
+  aplicarModoRuleta();
+});
+
+function aplicarModoRuleta(){
+  const info = document.getElementById("infoBox");
+
+  if(modoRuleta === "zing"){
+    document.querySelector("#header h1").innerText = "ZING DIBUJO - Zidoshifu";
+    info.innerHTML = "<b>ZING DIBUJO</b><br>Escribe <b>!Unirme</b> para entrar";
+    info.style.border = "1px solid #c084fc";
+    info.style.boxShadow = "0 0 25px rgba(192,132,252,0.7)";
+    info.style.background = "rgba(88,28,135,0.9)";
+  }else{
+    document.querySelector("#header h1").innerText = "Ruleta de BAN - Zidoshifu";
+    info.innerHTML = "Escribe <b>!BAN</b> en el chat para unirte";
+    info.style.border = "1px solid #a78bfa";
+    info.style.boxShadow = "0 0 20px rgba(167,139,250,0.4)";
+    info.style.background = "rgba(30,41,59,0.9)";
+  }
+}
 
 input.addEventListener("input", () => {
   if (updatingFromFirebase) return;
@@ -287,12 +413,10 @@ function drawWheel(){
   wheel.style.background=`conic-gradient(${gradient.slice(0,-1)})`;
 }
 
-// 🔥 ELIMINATION BUTTON FIX
 function toggleElimination(){
   eliminationMode = !eliminationMode;
 
   const btn = document.getElementById("elimBtn");
-
   btn.innerText = eliminationMode ? "ELIMINACIÓN: ON" : "ELIMINACIÓN: OFF";
   btn.style.background = eliminationMode ? "#8b5cf6" : "#9333ea";
 }
@@ -350,6 +474,21 @@ function spin(){
     }
 
   },6000);
+}
+
+function cambiarRuleta(){
+  const cortina = document.getElementById("cortina");
+
+  cortina.classList.add("activa");
+
+  setTimeout(()=>{
+    modoRuleta = (modoRuleta === "ban") ? "zing" : "ban";
+    db.ref("modoRuleta").set(modoRuleta);
+  },600);
+
+  setTimeout(()=>{
+    cortina.classList.remove("activa");
+  },1200);
 }
 </script>
 
