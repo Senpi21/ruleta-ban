@@ -257,12 +257,52 @@ textarea {
   0%,100%{ opacity:0.3; }
   50%{ opacity:1; }
 }
+
+#botBox{
+position:fixed;
+bottom:90px;
+left:20px;
+width:240px;
+padding:12px;
+border-radius:12px;
+background:rgba(15,23,42,.92);
+border:1px solid #8b5cf6;
+box-shadow:0 0 15px rgba(139,92,246,.35);
+z-index:1000;
+font-size:14px;
+}
+.botRow{
+display:flex;
+justify-content:space-between;
+margin-top:6px;
+}
+#botEstado{
+text-align:center;
+font-size:16px;
+font-weight:bold;
+margin-bottom:10px;
+}
+
 </style>
 </head>
 
 <body>
 
 <div id="bgOverlay"></div>
+
+<div id="botBox">
+<div id="botEstado"> BOT: DESCONECTADO</div>
+<div class="botRow"><span>Canal</span><span id="botCanal">-</span></div>
+<div class="botRow"><span>Versión</span><span id="botVersion">-</span></div>
+<div class="botRow"><span>Jugadores</span><span id="playerCount">0</span></div>
+<div class="botRow"><span>Firebase</span><span id="firebaseStatus">🟢</span></div>
+</div>
+
+<div id="historyBox" style="position:fixed;top:120px;left:20px;width:240px;padding:12px;border-radius:12px;background:rgba(15,23,42,.92);border:1px solid #8b5cf6;z-index:1000;">
+<b>📜 Historial</b>
+<div id="historyList">Sin datos</div>
+</div>
+
 
 <div id="header">
   <h1>Ruleta de BAN - Zidoshifu</h1>
@@ -513,7 +553,7 @@ function spin(){
     const winner = Math.floor(pointerDeg / angle) % players.length;
 
     if(eliminationMode){
-      showResult("ELIMINADO: " + players[winner]);
+      showResult("ELIMINADO: " + players[winner]); guardarHistorial(players[winner]);
       if(modoRuleta === "zing"){
         const s = bellSound.cloneNode();
         s.volume = 0.8;
@@ -530,7 +570,7 @@ function spin(){
       wheel.offsetHeight;
       wheel.style.transition = "transform 8s cubic-bezier(0.25, 0.1, 0.25, 1)";
     } else {
-      showResult("GANÓ: " + players[winner]);
+      showResult("GANÓ: " + players[winner]); guardarHistorial(players[winner]);
     }
   });
 }
@@ -574,6 +614,52 @@ function stopRealTicking(){
   }
 }
 
+
+
+// ===== BOT STATUS =====
+db.ref("bot").on("value", snap => {
+ const data = snap.val() || {};
+ document.getElementById("botCanal").innerText = data.canal || "-";
+ document.getElementById("botVersion").innerText = data.version || "-";
+
+ const estado = document.getElementById("botEstado");
+ const now = Math.floor(Date.now()/1000);
+ const ping = data.last_ping || 0;
+
+ if((now - ping) < 30){
+   estado.innerText = "🤖 BOT: ONLINE";
+   estado.style.color = "#4ade80";
+ } else {
+   estado.innerText = "🤖 BOT: OFFLINE";
+   estado.style.color = "#f87171";
+ }
+});
+
+db.ref("players").on("value", snap => {
+ const data = snap.val() || [];
+ const el = document.getElementById("playerCount");
+ if(el) el.innerText = data.length;
+});
+
+function guardarHistorial(nombre){
+ const ref = db.ref("history");
+ ref.once("value").then(s=>{
+   let h = s.val() || [];
+   h.unshift(nombre);
+   h = h.slice(0,5);
+   ref.set(h);
+ });
+}
+
+db.ref("history").on("value", snap => {
+ const h = snap.val() || [];
+ const box = document.getElementById("historyList");
+ if(box){
+   box.innerHTML = h.length ? h.map((x,i)=>`${i+1}. ${x}`).join("<br>") : "Sin datos";
+ }
+});
+
+
 function cambiarRuleta(){
   const cortina = document.getElementById("cortina");
   cortina.classList.add("activa");
@@ -587,4 +673,4 @@ function cambiarRuleta(){
 }
 </script>
 </body>
-</html>
+</html> 
