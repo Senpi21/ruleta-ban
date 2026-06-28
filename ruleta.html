@@ -380,7 +380,20 @@ const colors = ["#2e1065","#4c1d95","#5b21b6","#6d28d9","#7c3aed","#8b5cf6","#a7
 
 // --- CARGAR JUGADORES ---
 db.ref("players").on("value", snap => {
-  const data = snap.val() || [];
+  const raw = snap.val();
+
+  let data;
+
+  if (!raw) {
+    data = [];
+  } else if (Array.isArray(raw)) {
+    data = raw.filter(Boolean);
+  } else if (typeof raw === "object") {
+    data = Object.keys(raw);
+  } else {
+    data = [];
+  }
+
   updatingFromFirebase = true;
 
   if (!joinEnabled && data.length > players.length && !spinning) {
@@ -391,6 +404,10 @@ db.ref("players").on("value", snap => {
   players = data;
   input.value = players.join("\n");
   drawWheel();
+
+  const count = document.getElementById("playerCount");
+  if(count) count.innerText = players.length;
+
   updatingFromFirebase = false;
 });
 
@@ -636,9 +653,17 @@ db.ref("bot").on("value", snap => {
 });
 
 db.ref("players").on("value", snap => {
- const data = snap.val() || [];
+ const raw = snap.val();
+ let total = 0;
+
+ if(Array.isArray(raw)){
+   total = raw.filter(Boolean).length;
+ }else if(raw && typeof raw === "object"){
+   total = Object.keys(raw).length;
+ }
+
  const el = document.getElementById("playerCount");
- if(el) el.innerText = data.length;
+ if(el) el.innerText = total;
 });
 
 function guardarHistorial(nombre){
