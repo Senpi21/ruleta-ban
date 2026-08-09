@@ -7,7 +7,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <div id="marcaSenpi">
   Senpi_Random<br>
-  <span>RULETA 2.0.1</span>
+  <span>RULETA 3.0</span>
 </div>
 <style>
 * { box-sizing: border-box; }
@@ -177,7 +177,7 @@ textarea {
 
 #pointer {
   position: absolute;
-  top: 60%;
+  top: calc(100% - 240px);
   left: calc(50% - 240px - 8px - 10px);
   transform: translateY(-50%);
   border-top: 10px solid transparent;
@@ -283,23 +283,268 @@ font-weight:bold;
 margin-bottom:10px;
 }
 
+/* Pulido visual: conserva la identidad morada y mejora la lectura en stream. */
+#header {
+  padding: 26px 0 14px;
+}
+
+h1 {
+  font-size: 31px;
+  letter-spacing: .4px;
+  text-shadow: 0 3px 18px rgba(196, 181, 253, .3);
+}
+
+#infoBox,
+#botBox,
+#historyBox,
+#panel {
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+#infoBox {
+  top: 30px;
+  right: 32px;
+  width: 380px;
+  padding: 15px 18px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(88, 28, 135, .78), rgba(30, 41, 59, .88));
+  box-shadow: 0 10px 30px rgba(30, 7, 60, .35), 0 0 20px rgba(167, 139, 250, .25);
+}
+
+#main {
+  gap: 52px;
+  transform: translateX(65px);
+}
+
+#panel {
+  width: 292px;
+  padding: 14px;
+  gap: 11px;
+  border: 1px solid rgba(196, 181, 253, .28);
+  border-radius: 18px;
+  background: rgba(15, 23, 42, .48);
+  box-shadow: 0 16px 34px rgba(15, 23, 42, .3);
+}
+
+.panelTitle {
+  color: #ddd6fe;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1.3px;
+  text-align: center;
+}
+
+textarea {
+  width: 100%;
+  height: 144px;
+  padding: 12px;
+  line-height: 1.45;
+  border: 1px solid rgba(196, 181, 253, .28);
+  border-radius: 12px;
+  background: rgba(15, 23, 42, .78);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+  outline: none;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+
+textarea::placeholder { color: #94a3b8; }
+textarea:focus {
+  border-color: #c084fc;
+  box-shadow: 0 0 0 3px rgba(192, 132, 252, .16);
+}
+
+#panel button,
+#changeModeBtn {
+  border: 1px solid rgba(255,255,255,.12);
+  font-weight: 700;
+  letter-spacing: .15px;
+  transition: transform .18s ease, filter .18s ease, box-shadow .18s ease;
+}
+
+#panel button:hover:not(:disabled),
+#changeModeBtn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.12);
+}
+
+#panel button:active:not(:disabled),
+#changeModeBtn:active { transform: translateY(0); }
+#panel button:disabled { opacity: .58; cursor: not-allowed; }
+
+#spinBtn {
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  box-shadow: 0 8px 24px rgba(124, 58, 237, .5);
+}
+
+#elimBtn,
+#joinBtn {
+  box-shadow: 0 5px 16px rgba(124, 58, 237, .28);
+}
+
+#suddenBtn {
+  display: none;
+  height: 45px;
+  border-radius: 10px;
+  color: white;
+  background: linear-gradient(135deg, #a855f7, #7e22ce);
+  box-shadow: 0 5px 16px rgba(124, 58, 237, .28);
+}
+
+#suddenBtn.visible {
+  display: block;
+  animation: suddenReveal .4s cubic-bezier(.16, 1, .3, 1) both;
+}
+
+#suddenBtn.active {
+  background: linear-gradient(135deg, #f43f5e, #be123c);
+  box-shadow: 0 6px 20px rgba(244, 63, 94, .45);
+}
+
+#wheelLogo {
+  width: 250px;
+  margin-bottom: 20px;
+}
+
+#wheel {
+  border-color: rgba(255,255,255,.94);
+  box-shadow: 0 0 0 5px rgba(139, 92, 246, .12), 0 20px 55px rgba(15, 23, 42, .55), inset 0 0 35px rgba(255,255,255,.04);
+}
+
+#pointer {
+  z-index: 5;
+  filter: drop-shadow(0 0 7px rgba(196, 132, 252, .95));
+}
+
+#resultBox { background: rgba(8, 10, 28, .78); transition: opacity .22s ease; }
+#resultText {
+  min-width: 320px;
+  max-width: 80vw;
+  padding: 28px 42px;
+  border-radius: 20px;
+  background: linear-gradient(145deg, rgba(49, 46, 129, .97), rgba(17, 24, 39, .97));
+  box-shadow: 0 18px 60px rgba(0,0,0,.45), 0 0 30px rgba(167, 139, 250, .32);
+}
+
+#confettiCanvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2100;
+}
+
+#botBox,
+#historyBox {
+  width: 240px;
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, .75);
+  border: 1px solid rgba(167, 139, 250, .78);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, .35), 0 0 14px rgba(139, 92, 246, .2);
+}
+
+#historyBox {
+  position: fixed;
+  top: 130px;
+  left: 22px;
+  z-index: 1000;
+}
+
+#historyBox > b {
+  display: block;
+  margin-bottom: 6px;
+  color: #f5f3ff;
+}
+
+#historyList { line-height: 1.35; color: #e2e8f0; }
+.botRow { color: #cbd5e1; }
+.botRow span:last-child { color: white; font-weight: 700; }
+
+#changeModeBtn {
+  position: fixed;
+  bottom: 20px;
+  left: 22px;
+  z-index: 1000;
+  padding: 12px 18px;
+  border-radius: 12px;
+  color: white;
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  box-shadow: 0 8px 22px rgba(124, 58, 237, .42);
+  cursor: pointer;
+}
+
+/* Transiciones más orgánicas para la pantalla de stream. */
+#panel {
+  transform: translateX(26px);
+  animation: panelEnter .55s cubic-bezier(.16, .9, .25, 1) both;
+}
+
+#wheelLogo { animation: logoFloat 5s ease-in-out infinite; }
+
+#resultBox.active #resultText {
+  animation: resultReveal .42s cubic-bezier(.16, 1, .3, 1) both;
+}
+
+#cortina {
+  background: radial-gradient(circle at 50% 42%, #312e81, #171338 55%, #0f172a);
+  transition: opacity .42s ease;
+}
+
+#firebaseStatus {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .45px;
+}
+
+#firebaseStatus.connected { color: #86efac; }
+#firebaseStatus.disconnected { color: #fca5a5; }
+
+@keyframes panelEnter {
+  from { opacity: 0; transform: translate(26px, 12px); }
+  to { opacity: 1; transform: translate(26px, 0); }
+}
+
+@keyframes logoFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes resultReveal {
+  from { opacity: 0; transform: translateY(18px) scale(.9); }
+  70% { opacity: 1; transform: translateY(-2px) scale(1.025); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes suddenReveal {
+  from { opacity: 0; transform: translateY(10px) scale(.94); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 1180px) {
+  #main { transform: none; gap: 34px; }
+  #infoBox { width: 300px; right: 20px; }
+}
+
 </style>
 </head>
 
 <body>
 
 <div id="bgOverlay"></div>
+<canvas id="confettiCanvas" aria-hidden="true"></canvas>
 
 <div id="botBox">
 <div id="botEstado"> BOT: DESCONECTADO</div>
 <div class="botRow"><span>Canal</span><span id="botCanal">-</span></div>
 <div class="botRow"><span>Versión</span><span id="botVersion">-</span></div>
 <div class="botRow"><span>Jugadores</span><span id="playerCount">0</span></div>
-<div class="botRow"><span>Firebase</span><span id="firebaseStatus">🟢</span></div>
+<div class="botRow"><span>Firebase</span><span id="firebaseStatus">CONECTANDO</span></div>
 </div>
 
-<div id="historyBox" style="position:fixed;top:120px;left:20px;width:240px;padding:12px;border-radius:12px;background:rgba(15,23,42,.92);border:1px solid #8b5cf6;z-index:1000;">
-<b>📜 Historial</b>
+<div id="historyBox">
+<b>HISTORIAL</b>
 <div id="historyList">Sin datos</div>
 </div>
 
@@ -321,9 +566,11 @@ margin-bottom:10px;
 </div>
 
 <div id="panel">
-  <textarea id="listInput"></textarea>
+  <div class="panelTitle">CONTROL DE RULETA</div>
+  <textarea id="listInput" placeholder="Jugadores (uno por línea)"></textarea>
   <button id="spinBtn" onclick="spin()">GIRAR</button>
   <button id="elimBtn" onclick="toggleElimination()">ELIMINACIÓN: OFF</button>
+  <button id="suddenBtn" onclick="toggleMuerteSubita()">☠ MUERTE SÚBITA: OFF</button>
   <button id="joinBtn" onclick="toggleJoin()">UNIRSE: ON</button>
 </div>
 
@@ -331,19 +578,7 @@ margin-bottom:10px;
 
 <div id="resultBox"><div id="resultText"></div></div>
 
-<button onclick="cambiarRuleta()" style="
-position:fixed;
-bottom:20px;
-left:20px;
-padding:12px 20px;
-background:#7c3aed;
-border:none;
-border-radius:10px;
-color:white;
-box-shadow:0 0 20px #7c3aed;
-cursor:pointer;
-z-index:1000;
-">
+<button id="changeModeBtn" onclick="cambiarRuleta()">
 CAMBIAR RULETA
 </button>
 
@@ -364,13 +599,85 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
+const confettiCanvas = document.getElementById("confettiCanvas");
+const confettiContext = confettiCanvas.getContext("2d");
+let confettiFrame = null;
+
+function lanzarConfeti(){
+  if(!confettiContext) return;
+
+  if(confettiFrame) cancelAnimationFrame(confettiFrame);
+
+  const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  confettiCanvas.width = width * pixelRatio;
+  confettiCanvas.height = height * pixelRatio;
+  confettiContext.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+
+  const colores = ["#f9a8d4", "#fef08a", "#a7f3d0", "#93c5fd", "#c4b5fd", "#fda4af"];
+  const particulas = Array.from({length: 180}, (_, indice) => ({
+    x: width / 2 + (Math.random() - .5) * 120,
+    y: height * .36 + (Math.random() - .5) * 30,
+    vx: (Math.random() - .5) * 13,
+    vy: -Math.random() * 11 - 4,
+    gravedad: .16 + Math.random() * .08,
+    giro: Math.random() * Math.PI,
+    velocidadGiro: (Math.random() - .5) * .28,
+    tamaño: 7 + Math.random() * 8,
+    color: colores[indice % colores.length],
+  }));
+
+  const inicio = performance.now();
+  const duracion = 3000;
+
+  function animar(ahora){
+    const progreso = ahora - inicio;
+    confettiContext.clearRect(0, 0, width, height);
+
+    particulas.forEach(particula => {
+      particula.x += particula.vx;
+      particula.y += particula.vy;
+      particula.vy += particula.gravedad;
+      particula.vx *= .992;
+      particula.giro += particula.velocidadGiro;
+
+      confettiContext.save();
+      confettiContext.translate(particula.x, particula.y);
+      confettiContext.rotate(particula.giro);
+      confettiContext.fillStyle = particula.color;
+      confettiContext.fillRect(-particula.tamaño / 2, -particula.tamaño / 3, particula.tamaño, particula.tamaño * .65);
+      confettiContext.restore();
+    });
+
+    if(progreso < duracion){
+      confettiFrame = requestAnimationFrame(animar);
+    } else {
+      confettiContext.clearRect(0, 0, width, height);
+      confettiFrame = null;
+    }
+  }
+
+  confettiFrame = requestAnimationFrame(animar);
+}
+
+db.ref(".info/connected").on("value", snap => {
+  const status = document.getElementById("firebaseStatus");
+  if(!status) return;
+  const connected = snap.val() === true;
+  status.textContent = connected ? "CONECTADO" : "SIN CONEXIÓN";
+  status.className = connected ? "connected" : "disconnected";
+});
+
 let players = [];
 let currentRotation = 0;
 let spinning = false;
 let eliminationMode = false;
+let muerteSubita = false;
 let joinEnabled = true;
 let updatingFromFirebase = false;
 let modoRuleta = "ban";
+let pendingPlayers = null;
 
 const wheel = document.getElementById("wheel");
 const input = document.getElementById("listInput");
@@ -378,36 +685,35 @@ const spinBtn = document.getElementById("spinBtn");
 
 const colors = ["#2e1065","#4c1d95","#5b21b6","#6d28d9","#7c3aed","#8b5cf6","#a78bfa","#c4b5fd"];
 
+function normalizarJugadores(data){
+  if(Array.isArray(data)){
+    return data.map(x => String(x).trim()).filter(Boolean);
+  }
+  if(data && typeof data === "object"){
+    return Object.keys(data).map(x => x.trim()).filter(Boolean);
+  }
+  return [];
+}
+
+function aplicarJugadores(data){
+  players = normalizarJugadores(data);
+  input.value = players.join("\n");
+  drawWheel();
+  actualizarMuerteSubita();
+}
+
 // --- CARGAR JUGADORES ---
 db.ref("players").on("value", snap => {
-  const raw = snap.val();
+  const data = normalizarJugadores(snap.val());
 
-  let data;
-
-  if (!raw) {
-    data = [];
-  } else if (Array.isArray(raw)) {
-    data = raw.filter(Boolean);
-  } else if (typeof raw === "object") {
-    data = Object.keys(raw);
-  } else {
-    data = [];
-  }
-
-  updatingFromFirebase = true;
-
-  if (!joinEnabled && data.length > players.length && !spinning) {
-    updatingFromFirebase = false;
+  // Un cambio remoto no debe cambiar los nombres mientras se calcula el ganador.
+  if(spinning){
+    pendingPlayers = data;
     return;
   }
 
-  players = data;
-  input.value = players.join("\n");
-  drawWheel();
-
-  const count = document.getElementById("playerCount");
-  if(count) count.innerText = players.length;
-
+  updatingFromFirebase = true;
+  aplicarJugadores(data);
   updatingFromFirebase = false;
 });
 
@@ -457,13 +763,15 @@ function aplicarModoRuleta(){
 }
 
 input.addEventListener("input", () => {
-  if (updatingFromFirebase) return;
-  players = input.value.split("\n").filter(x => x.trim() !== "");
+  if (updatingFromFirebase || spinning) return;
+  players = input.value.split("\n").map(x => x.trim()).filter(Boolean);
   drawWheel();
-  db.ref("players").set(players);
+  actualizarMuerteSubita();
+  db.ref("players").transaction(() => players);
 });
 
 function toggleJoin(){
+  if(spinning) return;
   joinEnabled = !joinEnabled;
   db.ref("joinEnabled").set(joinEnabled);
 }
@@ -517,10 +825,33 @@ let lastTickTime = 0;
 let lastSegment = -1;
 
 function toggleElimination(){
+  if(spinning) return;
   eliminationMode = !eliminationMode;
   const btn = document.getElementById("elimBtn");
   btn.innerText = eliminationMode ? "ELIMINACIÓN: ON" : "ELIMINACIÓN: OFF";
   btn.style.background = eliminationMode ? "#8b5cf6" : "#9333ea";
+  actualizarMuerteSubita();
+}
+
+function actualizarMuerteSubita(){
+  const btn = document.getElementById("suddenBtn");
+  const disponible = eliminationMode && players.length === 2;
+
+  btn.classList.toggle("visible", disponible);
+
+  if(!disponible && muerteSubita){
+    muerteSubita = false;
+    btn.innerText = "☠ MUERTE SÚBITA: OFF";
+    btn.classList.remove("active");
+  }
+}
+
+function toggleMuerteSubita(){
+  if(spinning || !eliminationMode || players.length !== 2) return;
+  muerteSubita = !muerteSubita;
+  const btn = document.getElementById("suddenBtn");
+  btn.innerText = muerteSubita ? "☠ MUERTE SÚBITA: ON" : "☠ MUERTE SÚBITA: OFF";
+  btn.classList.toggle("active", muerteSubita);
 }
 
 function showResult(t){
@@ -529,6 +860,18 @@ function showResult(t){
   txt.innerText=t;
   box.classList.add("active");
   setTimeout(()=>box.classList.remove("active"),3000);
+}
+
+function indiceAleatorio(maximo){
+  if(window.crypto && window.crypto.getRandomValues){
+    const limite = Math.floor(2 ** 32 / maximo) * maximo;
+    const valor = new Uint32Array(1);
+    do {
+      window.crypto.getRandomValues(valor);
+    } while(valor[0] >= limite);
+    return valor[0] % maximo;
+  }
+  return Math.floor(Math.random() * maximo);
 }
 
 function spin(){
@@ -540,20 +883,29 @@ function spin(){
 
   if(!players.length || spinning) return;
 
+  if(eliminationMode && muerteSubita && players.length === 1){
+    showResult("GANADOR: " + players[0]);
+    return;
+  }
+
+  const jugadoresDelGiro = [...players];
   spinning=true;
+  input.disabled=true;
   startRealTicking();
   
   spinBtn.innerText="GIRANDO...";
   spinBtn.disabled=true;
 
-  const angle = 360 / players.length;
-  const randomIndex = Math.floor(Math.random() * players.length);
+  const angle = 360 / jugadoresDelGiro.length;
+  const randomIndex = indiceAleatorio(jugadoresDelGiro.length);
   const targetAngle = randomIndex * angle + angle / 2;
 
   // Rotación: vueltas base + compensación para que el puntero (izquierda) marque bien
-  const finalRotation = currentRotation + (360 * 15) + (270 - targetAngle);
+  const targetRotation = 270 - targetAngle;
+  const ajuste = ((targetRotation - currentRotation) % 360 + 360) % 360;
+  const finalRotation = currentRotation + (360 * 15) + ajuste;
 
-  wheel.style.transition = "transform 8s cubic-bezier(0.25, 0.1, 0.25, 1)";
+  wheel.style.transition = "transform 11.5s cubic-bezier(0.08, 0.82, 0.12, 1)";
   wheel.style.transform=`rotate(${finalRotation}deg)`;
   currentRotation = finalRotation;
 
@@ -562,32 +914,55 @@ function spin(){
     stopRealTicking();
 
     spinning=false;
+    input.disabled=false;
     spinBtn.innerText="GIRAR";
     spinBtn.disabled=false;
 
-    const normalized = (currentRotation % 360 + 360) % 360;
-    const pointerDeg = (360 - normalized + 270) % 360;
-    const winner = Math.floor(pointerDeg / angle) % players.length;
+    const ganador = jugadoresDelGiro[randomIndex];
+
+    if(pendingPlayers !== null){
+      aplicarJugadores(pendingPlayers);
+      pendingPlayers = null;
+    }
 
     if(eliminationMode){
-      showResult("ELIMINADO: " + players[winner]); guardarHistorial(players[winner]);
-      if(modoRuleta === "zing"){
-        const s = bellSound.cloneNode();
-        s.volume = 0.8;
-        s.play().catch(()=>{});
-      }
-      players.splice(winner,1);
+      const finalMuerteSubita = muerteSubita && jugadoresDelGiro.length === 2;
+      const superviviente = finalMuerteSubita
+        ? jugadoresDelGiro[1 - randomIndex]
+        : null;
+
+      const indiceActual = players.indexOf(ganador);
+      if(indiceActual !== -1) players.splice(indiceActual,1);
       input.value = players.join("\n");
       drawWheel();
-      db.ref("players").set(players);
+      actualizarMuerteSubita();
+
+      if(finalMuerteSubita){
+        showResult("GANADOR: " + superviviente);
+        guardarHistorial(superviviente);
+        lanzarConfeti();
+      } else {
+        showResult("ELIMINADO: " + ganador);
+        guardarHistorial(ganador);
+        const sonidoEliminado = bellSound.cloneNode();
+        sonidoEliminado.volume = 0.8;
+        sonidoEliminado.play().catch(()=>{});
+      }
+
+      db.ref("players").transaction(current => {
+        const lista = normalizarJugadores(current);
+        const indice = lista.indexOf(ganador);
+        if(indice !== -1) lista.splice(indice, 1);
+        return lista;
+      });
 
       wheel.style.transition = "none";
       wheel.style.transform = "rotate(0deg)";
       currentRotation = 0;
       wheel.offsetHeight;
-      wheel.style.transition = "transform 8s cubic-bezier(0.25, 0.1, 0.25, 1)";
+      wheel.style.transition = "transform 11.5s cubic-bezier(0.08, 0.82, 0.12, 1)";
     } else {
-      showResult("GANÓ: " + players[winner]); guardarHistorial(players[winner]);
+      showResult("GANÓ: " + ganador); guardarHistorial(ganador);
     }
   });
 }
@@ -644,35 +1019,25 @@ db.ref("bot").on("value", snap => {
  const ping = data.last_ping || 0;
 
  if((now - ping) < 30){
-   estado.innerText = "🤖 BOT: ONLINE";
+   estado.innerText = "BOT: ONLINE";
    estado.style.color = "#4ade80";
  } else {
-   estado.innerText = "🤖 BOT: OFFLINE";
+   estado.innerText = "BOT: OFFLINE";
    estado.style.color = "#f87171";
  }
 });
 
 db.ref("players").on("value", snap => {
- const raw = snap.val();
- let total = 0;
-
- if(Array.isArray(raw)){
-   total = raw.filter(Boolean).length;
- }else if(raw && typeof raw === "object"){
-   total = Object.keys(raw).length;
- }
-
+ const data = snap.val() || [];
  const el = document.getElementById("playerCount");
- if(el) el.innerText = total;
+ if(el) el.innerText = data.length;
 });
 
 function guardarHistorial(nombre){
  const ref = db.ref("history");
- ref.once("value").then(s=>{
-   let h = s.val() || [];
-   h.unshift(nombre);
-   h = h.slice(0,5);
-   ref.set(h);
+ ref.transaction(actual => {
+   const historial = Array.isArray(actual) ? actual.map(String) : [];
+   return [nombre, ...historial].slice(0,5);
  });
 }
 
@@ -680,12 +1045,22 @@ db.ref("history").on("value", snap => {
  const h = snap.val() || [];
  const box = document.getElementById("historyList");
  if(box){
-   box.innerHTML = h.length ? h.map((x,i)=>`${i+1}. ${x}`).join("<br>") : "Sin datos";
+   box.replaceChildren();
+   if(!Array.isArray(h) || !h.length){
+     box.textContent = "Sin datos";
+     return;
+   }
+   h.forEach((nombre, indice) => {
+     const linea = document.createElement("div");
+     linea.textContent = `${indice + 1}. ${nombre}`;
+     box.appendChild(linea);
+   });
  }
 });
 
 
 function cambiarRuleta(){
+  if(spinning) return;
   const cortina = document.getElementById("cortina");
   cortina.classList.add("activa");
   setTimeout(()=>{
@@ -699,3 +1074,4 @@ function cambiarRuleta(){
 </script>
 </body>
 </html> 
+
