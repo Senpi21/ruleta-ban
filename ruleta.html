@@ -589,6 +589,7 @@ CAMBIAR RULETA
 
 <audio id="tickSound" src="tick.mp3"></audio>
 <audio id="bellSound" src="BELL.mp3"></audio>
+<audio id="celebrationSound" src="celebration.mp3" preload="auto"></audio>
 
 <script>
 const firebaseConfig = {
@@ -820,6 +821,7 @@ function drawWheel(){
 
 const tickSound = document.getElementById("tickSound");
 const bellSound = document.getElementById("bellSound");
+const celebrationSound = document.getElementById("celebrationSound");
 let tickingRAF = null;
 let lastTickTime = 0;
 let lastSegment = -1;
@@ -941,6 +943,8 @@ function spin(){
         showResult("GANADOR: " + superviviente);
         guardarHistorial(superviviente);
         lanzarConfeti();
+        celebrationSound.currentTime = 0;
+        celebrationSound.play().catch(()=>{});
       } else {
         showResult("ELIMINADO: " + ganador);
         guardarHistorial(ganador);
@@ -1074,4 +1078,3 @@ function cambiarRuleta(){
 </script>
 </body>
 </html> 
-
