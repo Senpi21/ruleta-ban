@@ -5,10 +5,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
-<div id="marcaSenpi">
-  Senpi_Random<br>
-  <span>RULETA 3.0</span>
-</div>
+
 <style>
 * { box-sizing: border-box; }
 #marcaSenpi{
@@ -19,7 +16,6 @@
   text-align: right;
   color: rgba(255,255,255,0.6);
   font-family: Arial;
-  pointer-events: none;
   z-index: 999;
 }
 
@@ -172,7 +168,7 @@ textarea {
   border: 8px solid white;
   position: relative;
   overflow: hidden;
-  transition: transform 8s cubic-bezier(0.25, 0.1, 0.25, 1);
+  transition: transform 13.5s cubic-bezier(0.30, 0.02, 0.18, 1);
 }
 
 #pointer {
@@ -527,14 +523,18 @@ textarea:focus {
   #infoBox { width: 300px; right: 20px; }
 }
 
+
 </style>
 </head>
 
 <body>
+<div id="marcaSenpi">
+  Senpi_Random<br>
+  <span>RULETA 3.0</span>
+</div>
 
 <div id="bgOverlay"></div>
 <canvas id="confettiCanvas" aria-hidden="true"></canvas>
-
 <div id="botBox">
 <div id="botEstado"> BOT: DESCONECTADO</div>
 <div class="botRow"><span>Canal</span><span id="botCanal">-</span></div>
@@ -572,6 +572,7 @@ textarea:focus {
   <button id="elimBtn" onclick="toggleElimination()">ELIMINACIÓN: OFF</button>
   <button id="suddenBtn" onclick="toggleMuerteSubita()">☠ MUERTE SÚBITA: OFF</button>
   <button id="joinBtn" onclick="toggleJoin()">UNIRSE: ON</button>
+  <button id="subsSoonBtn" disabled title="Esta modalidad se habilitará más adelante">ACTIVAR RULETA SOLO SUSCRIPTORES · PRÓXIMAMENTE</button>
 </div>
 
 </div>
@@ -699,34 +700,18 @@ function normalizarJugadores(data){
 function aplicarJugadores(data){
   players = normalizarJugadores(data);
   input.value = players.join("\n");
+  const contador = document.getElementById("playerCount");
+  if(contador) contador.innerText = players.length;
   drawWheel();
   actualizarMuerteSubita();
 }
 
-// --- CARGAR JUGADORES ---
-db.ref("players").on("value", snap => {
-  const data = normalizarJugadores(snap.val());
-
-  // Un cambio remoto no debe cambiar los nombres mientras se calcula el ganador.
-  if(spinning){
-    pendingPlayers = data;
-    return;
-  }
-
-  updatingFromFirebase = true;
-  aplicarJugadores(data);
-  updatingFromFirebase = false;
-});
-
-// --- CONTROL DE UNIRSE Y FEEDBACK DEL BOTÓN GIRAR ---
-db.ref("joinEnabled").on("value", snap => {
-  joinEnabled = snap.val() ?? true;
-
+function aplicarEstadoUnirse(estado){
+  joinEnabled = estado;
   const btn = document.getElementById("joinBtn");
   btn.innerText = joinEnabled ? "UNIRSE: ON" : "UNIRSE: OFF";
   btn.style.background = joinEnabled ? "#8b5cf6" : "#9333ea";
 
-  // Cambiar aspecto del botón girar si está bloqueado por Unirse: ON
   if (joinEnabled) {
     spinBtn.style.background = "#475569";
     spinBtn.style.boxShadow = "none";
@@ -736,6 +721,23 @@ db.ref("joinEnabled").on("value", snap => {
     spinBtn.style.boxShadow = "0 0 20px #7c3aed";
     spinBtn.style.cursor = "pointer";
   }
+}
+
+// --- CARGAR JUGADORES NORMALES ---
+db.ref("players").on("value", snap => {
+  const data = normalizarJugadores(snap.val());
+  if(spinning){
+    pendingPlayers = data;
+    return;
+  }
+  updatingFromFirebase = true;
+  aplicarJugadores(data);
+  updatingFromFirebase = false;
+});
+
+// --- CONTROL DE UNIRSE Y FEEDBACK DEL BOTÓN GIRAR ---
+db.ref("joinEnabled").on("value", snap => {
+  aplicarEstadoUnirse(snap.val() ?? true);
 });
 
 db.ref("modoRuleta").on("value", snap => {
@@ -748,7 +750,13 @@ function aplicarModoRuleta(){
   const info = document.getElementById("infoBox");
   const header = document.querySelector("#header h1");
 
-  if(modoRuleta === "zing"){
+  if(modoRuleta === "subs"){
+    header.innerText = "Ruleta de SUBS - Zidoshifu";
+    info.innerHTML = "<b>RULETA DE SUBS</b><br>Solo suscriptores: escribe <b>!sub</b> para entrar";
+    info.style.border = "1px solid #facc15";
+    info.style.boxShadow = "0 0 25px rgba(250,204,21,0.65)";
+    info.style.background = "rgba(113,63,18,0.9)";
+  } else if(modoRuleta === "zing"){
     header.innerText = "ZING DIBUJO - Zidoshifu";
     info.innerHTML = "<b>ZING DIBUJO</b><br>Escribe <b>!Unirme</b> para entrar";
     info.style.border = "1px solid #c084fc";
@@ -765,7 +773,7 @@ function aplicarModoRuleta(){
 
 input.addEventListener("input", () => {
   if (updatingFromFirebase || spinning) return;
-  players = input.value.split("\n").map(x => x.trim()).filter(Boolean);
+  const lista = input.value.split("\n").map(x => x.trim()).filter(Boolean);players = lista;
   drawWheel();
   actualizarMuerteSubita();
   db.ref("players").transaction(() => players);
@@ -776,7 +784,6 @@ function toggleJoin(){
   joinEnabled = !joinEnabled;
   db.ref("joinEnabled").set(joinEnabled);
 }
-
 function drawWheel(){
   if(!players.length){
     wheel.innerHTML="";
@@ -825,6 +832,8 @@ const celebrationSound = document.getElementById("celebrationSound");
 let tickingRAF = null;
 let lastTickTime = 0;
 let lastSegment = -1;
+const SPIN_DURATION_SECONDS = 13.5;
+const SPIN_TURNS = 12;
 
 function toggleElimination(){
   if(spinning) return;
@@ -905,13 +914,14 @@ function spin(){
   // Rotación: vueltas base + compensación para que el puntero (izquierda) marque bien
   const targetRotation = 270 - targetAngle;
   const ajuste = ((targetRotation - currentRotation) % 360 + 360) % 360;
-  const finalRotation = currentRotation + (360 * 15) + ajuste;
+  const finalRotation = currentRotation + (360 * SPIN_TURNS) + ajuste;
 
-  wheel.style.transition = "transform 11.5s cubic-bezier(0.08, 0.82, 0.12, 1)";
+  wheel.style.transition = `transform ${SPIN_DURATION_SECONDS}s cubic-bezier(0.30, 0.02, 0.18, 1)`;
   wheel.style.transform=`rotate(${finalRotation}deg)`;
   currentRotation = finalRotation;
 
-  wheel.addEventListener("transitionend", function handler(){
+  wheel.addEventListener("transitionend", function handler(event){
+    if(event.propertyName !== "transform") return;
     wheel.removeEventListener("transitionend", handler);
     stopRealTicking();
 
@@ -951,20 +961,18 @@ function spin(){
         const sonidoEliminado = bellSound.cloneNode();
         sonidoEliminado.volume = 0.8;
         sonidoEliminado.play().catch(()=>{});
-      }
-
-      db.ref("players").transaction(current => {
-        const lista = normalizarJugadores(current);
-        const indice = lista.indexOf(ganador);
-        if(indice !== -1) lista.splice(indice, 1);
-        return lista;
-      });
-
+      } 
+        db.ref("players").transaction(current => {
+          const lista = normalizarJugadores(current);
+          const indice = lista.indexOf(ganador);
+          if(indice !== -1) lista.splice(indice, 1);
+          return lista;
+        });
       wheel.style.transition = "none";
       wheel.style.transform = "rotate(0deg)";
       currentRotation = 0;
       wheel.offsetHeight;
-      wheel.style.transition = "transform 11.5s cubic-bezier(0.08, 0.82, 0.12, 1)";
+      wheel.style.transition = `transform ${SPIN_DURATION_SECONDS}s cubic-bezier(0.30, 0.02, 0.18, 1)`;
     } else {
       showResult("GANÓ: " + ganador); guardarHistorial(ganador);
     }
@@ -985,14 +993,14 @@ function startRealTicking(){
 
     if(currentSegment !== lastSegment){
       const now = Date.now();
-      if(now - lastTickTime > 90){ // ⏱️ menos frecuencia (antes 45)
+      if(now - lastTickTime > 70){ // Limita el audio sin perder tanto el ritmo de las casillas.
   lastTickTime = now;
 
   const tick = tickSound.cloneNode();
 
-  tick.volume = 0.2; // 🔊 más suave (antes 0.5)
+  tick.volume = 0.16; // Más suave durante la aceleración.
 
-  tick.playbackRate = 1.1; // 🎧 un pelín más agudo para que no se sienta pesado
+  tick.playbackRate = 0.96; // Un tono más natural y menos frenético.
 
   tick.play().catch(()=>{});
 }
@@ -1032,34 +1040,34 @@ db.ref("bot").on("value", snap => {
 });
 
 db.ref("players").on("value", snap => {
- const data = snap.val() || [];
- const el = document.getElementById("playerCount");
- if(el) el.innerText = data.length;
+  const el = document.getElementById("playerCount");
+  if(el) el.innerText = normalizarJugadores(snap.val()).length;
 });
 
-function guardarHistorial(nombre){
- const ref = db.ref("history");
- ref.transaction(actual => {
-   const historial = Array.isArray(actual) ? actual.map(String) : [];
-   return [nombre, ...historial].slice(0,5);
+function renderizarHistorial(historial){
+ const box = document.getElementById("historyList");
+ if(!box) return;
+ box.replaceChildren();
+ if(!Array.isArray(historial) || !historial.length){
+   box.textContent = "Sin datos";
+   return;
+ }
+ historial.forEach((nombre, indice) => {
+   const linea = document.createElement("div");
+   linea.textContent = `${indice + 1}. ${nombre}`;
+   box.appendChild(linea);
  });
 }
 
+function guardarHistorial(nombre){
+  const ref = db.ref("history");
+  ref.transaction(actual => {
+    const historial = Array.isArray(actual) ? actual.map(String) : [];
+    return [nombre, ...historial].slice(0,5);
+  });
+}
 db.ref("history").on("value", snap => {
- const h = snap.val() || [];
- const box = document.getElementById("historyList");
- if(box){
-   box.replaceChildren();
-   if(!Array.isArray(h) || !h.length){
-     box.textContent = "Sin datos";
-     return;
-   }
-   h.forEach((nombre, indice) => {
-     const linea = document.createElement("div");
-     linea.textContent = `${indice + 1}. ${nombre}`;
-     box.appendChild(linea);
-   });
- }
+  renderizarHistorial(Array.isArray(snap.val()) ? snap.val().map(String) : []);
 });
 
 
@@ -1068,7 +1076,8 @@ function cambiarRuleta(){
   const cortina = document.getElementById("cortina");
   cortina.classList.add("activa");
   setTimeout(()=>{
-    modoRuleta = (modoRuleta === "ban") ? "zing" : "ban";
+    const modos = ["ban", "zing"];
+    modoRuleta = modos[(modos.indexOf(modoRuleta) + 1) % modos.length];
     db.ref("modoRuleta").set(modoRuleta);
   },600);
   setTimeout(()=>{
