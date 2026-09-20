@@ -1,0 +1,54 @@
+/* Zidoshifu — diseño adaptable. */
+:root{color-scheme:dark;--ink:#f5f0ff;--muted:#a59ab9;--line:rgba(206,184,245,.14);--accent:#c5a2ff;--wheel-size:clamp(280px,34vw,480px)}
+body{height:auto;min-height:100vh;overflow:auto;display:grid;grid-template-columns:220px minmax(0,1fr) 310px;grid-template-rows:auto auto 1fr auto;gap:24px;padding:28px 36px 20px;max-width:1800px;margin:auto;font-family:'Segoe UI',Arial,sans-serif;background:#100d19;color:var(--ink);isolation:isolate}
+body::before{opacity:.35;background-image:radial-gradient(rgba(183,151,224,.18) .7px,transparent .7px);background-size:24px 24px;z-index:-2}
+#bgOverlay{background:radial-gradient(ellipse at 48% 45%,rgba(108,57,170,.19),transparent 55%);animation:none;z-index:-1}
+#header{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:24px;padding:0 0 24px;border-bottom:1px solid var(--line);text-align:left}
+.brand{display:flex;align-items:center;gap:12px}.brandIcon{display:grid;place-items:center;width:42px;height:42px;border:1px solid #80639d;border-radius:14px;font-size:27px;color:var(--accent);background:#241b34}.brand strong{display:block;font-size:26px;letter-spacing:-1px}.brand small{display:block;font-size:8px;letter-spacing:1.8px;color:var(--muted);margin-top:4px}
+#header h1{font-size:12px;font-weight:500;letter-spacing:.6px;color:#ccbddf;text-shadow:none;border:1px solid var(--line);padding:10px 16px;border-radius:30px}.communityTag{font-size:12px;color:var(--muted)}
+#main{display:contents;transform:none}#container{grid-column:2;grid-row:2/5;align-self:center;min-width:0;padding:12px 0 0;gap:0}
+.eyebrow{display:block;color:var(--accent);font-size:9px;font-weight:650;letter-spacing:1.8px}.stageHeading{text-align:center}.stageHeading h2{font-size:clamp(23px,2.3vw,35px);font-weight:600;letter-spacing:-1.3px;margin:10px 0 0}
+#wheelLogo{width:220px;height:120px;object-fit:contain;margin:12px 0 18px;animation:none;filter:drop-shadow(0 5px 15px #0005)}
+.wheelShell{position:relative;width:var(--wheel-size);height:var(--wheel-size);flex-shrink:0;border-radius:50%;box-shadow:0 0 0 9px #20172e,0 0 0 10px #65517c,0 0 0 18px #191220,0 0 0 19px #382841,0 25px 75px #0006}
+#wheel{width:100%;height:100%;border:4px solid #d1b9ed;box-shadow:inset 0 0 45px #0004;background:transparent}
+.wheelShell:before{content:'';position:absolute;inset:-28px;border:1px dashed #544063;border-radius:50%;pointer-events:none;opacity:.5}
+#pointer{top:50%;left:-15px;transform:translateY(-50%);border-top:13px solid transparent;border-bottom:13px solid transparent;border-left:30px solid #f2d6a7;filter:drop-shadow(2px 2px 5px #0008);z-index:5}
+.wheelHub{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:60px;height:60px;display:grid;place-items:center;background:#20152f;border:4px solid #d1b9ed;border-radius:50%;box-shadow:0 3px 15px #0006;color:#f2d6a7;font-size:29px;pointer-events:none}.wheelHub[hidden]{display:none}
+#emptyWheel{position:absolute;inset:4px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;text-align:center;background:repeating-conic-gradient(from 0deg,#251932 0deg 45deg,#2c1e3c 45deg 90deg);pointer-events:none}#emptyWheel[hidden]{display:none}#emptyWheel>span{font-size:42px;color:#e8ca9d}#emptyWheel strong{font-size:clamp(20px,2.2vw,30px);line-height:1.25;font-weight:500;letter-spacing:-.7px}#emptyWheel small{font-size:11px;color:#baabc9}
+.stageFootnote{font-size:11px;color:var(--muted);margin:38px 0 16px;text-align:center}
+#infoBox{position:static;grid-column:1;grid-row:2;width:auto;padding:20px!important;text-align:left;font-size:13px;line-height:1.9;background:#231a31!important;border:1px solid #65507e!important;box-shadow:none!important;border-radius:16px;z-index:auto}#infoBox b{color:#e5cbff}
+#historyBox{position:static;grid-column:1;grid-row:3;align-self:start;width:auto;padding:22px 0;background:none;border:none;box-shadow:none;border-radius:0;z-index:auto}#historyBox>b{font-size:18px;font-weight:500;margin:9px 0 20px;letter-spacing:-.4px}#historyList{font-size:13px;color:var(--muted);line-height:1.6;overflow-wrap:anywhere}#historyList>div{padding:12px 0;border-bottom:1px solid var(--line)}
+#botBox{position:static;grid-column:1;grid-row:4;width:auto;padding:18px;background:#17121f;border:1px solid var(--line);border-radius:14px;box-shadow:none;z-index:auto;font-size:11px}#botEstado{font-size:10px;letter-spacing:1px;text-align:left;margin-bottom:16px;color:var(--muted)}.botRow{margin-top:10px;color:var(--muted)}.botRow span:last-child{font-size:10px;font-weight:500}#firebaseStatus{font-size:9px!important}
+#panel{grid-column:3;grid-row:2/5;align-self:center;width:100%;padding:24px;gap:14px;transform:none;animation:none;background:linear-gradient(160deg,#231a30,#191320);border:1px solid var(--line);border-radius:20px;box-shadow:0 14px 40px #0002}
+.panelTitle{text-align:left;font-size:23px;letter-spacing:-.7px;font-weight:600;color:var(--ink);margin:0 0 9px}#panel label{display:flex;justify-content:space-between;font-size:12px;color:#e5dced}#panel label span{font-size:10px;color:var(--muted)}textarea{height:158px;border:1px solid #44344f;border-radius:10px;background:#130e1c;box-shadow:none;font:13px/1.8 'Segoe UI',Arial,sans-serif;padding:13px}textarea::placeholder{color:#897b9a}textarea:focus{border-color:#bc91eb;box-shadow:0 0 0 3px #bc91eb18}.controlHint{font-size:11px;line-height:1.65;color:var(--muted);margin:0}
+#panel button,#changeModeBtn{font-family:inherit;letter-spacing:.4px;cursor:pointer}#panel #spinBtn{height:54px;background:linear-gradient(110deg,#d5b5ff,#b58aed)!important;color:#241333;box-shadow:0 4px 18px #b58aed20!important;border:0;font-size:15px;border-radius:10px}#panel #spinBtn:disabled{opacity:.5}#panel #elimBtn,#panel #joinBtn{height:42px;font-size:11px;box-shadow:none;background:#30213f!important;border:1px solid #513863;border-radius:9px;color:#e1cfef}#panel #joinBtn[aria-pressed=true],#panel #elimBtn[aria-pressed=true]{border-color:#b695db;background:#49335e!important}#suddenBtn{font-size:11px;box-shadow:none}#subsSoonBtn{background:none;border:0!important;border-top:1px solid var(--line)!important;border-radius:0;color:var(--muted);font-size:9px;padding:18px 0 0;margin-top:4px;opacity:1!important}
+#changeModeBtn{position:static;grid-column:3;grid-row:5;width:100%;background:none;border:1px solid var(--line);box-shadow:none;font-size:10px;color:#cabadc;padding:12px;z-index:auto}#marcaSenpi{position:static;grid-column:1/3;grid-row:5;align-self:center;text-align:left;font:10px/1.8 'Segoe UI',Arial,sans-serif;color:var(--muted);z-index:auto}#marcaSenpi span{font-size:10px;color:#998aa7}
+#resultBox{backdrop-filter:blur(10px);background:#0e091cbb}#resultText{min-width:0;width:min(620px,88vw);padding:55px 32px;background:linear-gradient(145deg,#342146,#1b1226);border:1px solid #a784c9;border-radius:24px;box-shadow:0 30px 100px #0007;font-size:clamp(22px,4vw,42px);letter-spacing:-1px;overflow-wrap:anywhere}#resultText:before{content:'✦  ZIDOSHIFU  ✦';display:block;font-size:11px;letter-spacing:4px;color:#e8ca9d;margin-bottom:24px}
+button:focus-visible{outline:2px solid #f2d6a7;outline-offset:4px}
+/* Presentación simple con los ocho colores originales, incluso sin jugadores. */
+body::before{display:none}
+.wheelShell{box-shadow:0 12px 32px #0004}
+.wheelShell:before{display:none}
+#wheel{border:8px solid white;box-shadow:none}
+#pointer{border-left-color:#8b5cf6;filter:none}
+.wheelHub{display:none}
+#emptyWheel{inset:8px;background:conic-gradient(#2e1065 0deg 45deg,#4c1d95 45deg 90deg,#5b21b6 90deg 135deg,#6d28d9 135deg 180deg,#7c3aed 180deg 225deg,#8b5cf6 225deg 270deg,#a78bfa 270deg 315deg,#c4b5fd 315deg 360deg)}
+#panel{background:#1c1528;box-shadow:none;border-radius:12px}
+#panel #spinBtn{background:#7c3aed!important;color:white;box-shadow:none!important}
+#resultText:before{display:none}
+/* Barrido de entrada y salida; el modo cambia bajo la cortina. */
+#cortina{background:linear-gradient(120deg,#171023 0%,#2e1065 60%,#4c1d95 100%);opacity:1;visibility:hidden;clip-path:inset(0 100% 0 0);transition:clip-path .42s cubic-bezier(.76,0,.24,1),visibility 0s .42s;overflow:hidden}
+#cortina.activa{visibility:visible;clip-path:inset(0 0 0 0);transition-delay:0s}
+#cortina.activa.saliendo{clip-path:inset(0 0 0 100%)}
+#cortina::after{content:'';position:absolute;inset:0;border-top:3px solid #a78bfa;border-bottom:3px solid #7c3aed;pointer-events:none}
+#cortinaLogo{width:clamp(180px,25vw,340px);margin:0;animation:none;filter:drop-shadow(0 12px 24px #0005);opacity:0;transform:translateX(-24px);transition:opacity .2s ease,transform .4s cubic-bezier(.22,1,.36,1)}
+#cortina.activa #cortinaLogo{opacity:1;transform:translateX(0);transition-delay:.2s}
+#cortina.saliendo #cortinaLogo{opacity:0;transform:translateX(24px);transition-delay:0s}
+#changeModeBtn:disabled{opacity:.5;cursor:wait;transform:none}
+@media(prefers-reduced-motion:reduce){#cortina,#cortinaLogo{transition:none!important}#cortinaLogo,#cortina.activa #cortinaLogo,#cortina.saliendo #cortinaLogo{transform:none}}
+@media(min-width:1600px){body{padding-top:40px;gap:32px;grid-template-columns:250px minmax(0,1fr) 340px}}
+@media(max-width:1150px){body{grid-template-columns:180px minmax(0,1fr) 270px;padding:20px;gap:20px;--wheel-size:clamp(260px,31vw,400px)}#panel{padding:18px}.stageHeading h2{font-size:25px}.communityTag{display:none}.brand small{font-size:7px}}
+@media(max-width:900px){body{grid-template-columns:minmax(0,1fr) 290px;--wheel-size:clamp(270px,43vw,420px)}#header{grid-column:1/-1}#container{grid-column:1;grid-row:3/6}#panel{grid-column:2;grid-row:3/6}#infoBox{grid-column:1/-1;grid-row:2;text-align:center;padding:12px!important}#historyBox{grid-column:1;grid-row:6;padding:18px}#botBox{grid-column:2;grid-row:6;align-self:start}#changeModeBtn{grid-column:2;grid-row:7}#marcaSenpi{grid-column:1;grid-row:7}}
+@media(max-width:620px){body{display:flex;flex-direction:column;padding:20px 18px;gap:22px;--wheel-size:min(76vw,380px)}#header{order:0;gap:12px;flex-wrap:wrap;padding-bottom:18px}.brand strong{font-size:25px}#header h1{font-size:10px;margin:0}#infoBox{order:1;width:100%}#container{order:2;width:100%}.stageHeading h2{font-size:28px}#wheelLogo{height:65px;margin-bottom:22px}.stageFootnote{font-size:9px}#panel{order:3;max-width:420px;align-self:center;padding:24px}#historyBox{order:4;padding:10px 0}#botBox{order:5;width:100%}#changeModeBtn{order:6}#marcaSenpi{order:7;text-align:center;align-self:center}.wheelHub{width:50px;height:50px}#cortinaLogo{max-width:75vw}}
+@media(prefers-reduced-motion:reduce){#wheelLogo,#bgOverlay,#cortinaLogo,#cargandoText{animation:none}#panel button,#changeModeBtn,#resultBox,#cortina{transition:none}}
+@media(max-width:620px){#wheelLogo{width:min(200px,65vw);height:100px}}
