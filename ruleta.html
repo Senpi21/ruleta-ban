@@ -1,7 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zidoshifu · La ruleta del chat</title>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
@@ -525,12 +527,12 @@ textarea:focus {
 
 
 </style>
+<link rel="stylesheet" href="ruleta-studio.css">
 </head>
 
 <body>
 <div id="marcaSenpi">
-  Senpi_Random<br>
-  <span>RULETA 3.0</span>
+  Senpi_Random
 </div>
 
 <div id="bgOverlay"></div>
@@ -544,12 +546,13 @@ textarea:focus {
 </div>
 
 <div id="historyBox">
-<b>HISTORIAL</b>
+<b>Últimos resultados</b>
 <div id="historyList">Sin datos</div>
 </div>
 
 
 <div id="header">
+  <div class="brand"><strong>Zidoshifu</strong></div>
   <h1>Ruleta de BAN - Zidoshifu</h1>
 </div>
 
@@ -560,36 +563,41 @@ textarea:focus {
 <div id="main">
 
 <div id="container">
-  <img id="wheelLogo" src="logoshifu.png">
-  <div id="pointer"></div>
-  <div id="wheel"></div>
+  <img id="wheelLogo" src="logoshifu.png" alt="Zidoshifu">
+  <div class="wheelShell">
+    <div id="pointer" aria-hidden="true"></div>
+    <div id="wheel"></div>
+    <div class="wheelHub" aria-hidden="true" hidden></div>
+    <div id="emptyWheel" aria-hidden="true"></div>
+  </div>
 </div>
 
 <div id="panel">
-  <div class="panelTitle">CONTROL DE RULETA</div>
-  <textarea id="listInput" placeholder="Jugadores (uno por línea)"></textarea>
+  <div class="panelTitle">Controles</div>
+  <label for="listInput">Participantes <span>Uno por línea</span></label>
+  <textarea id="listInput" spellcheck="false" placeholder="Nombres de los participantes"></textarea>
+  <p class="controlHint">Pon UNIRSE en OFF para girar.</p>
   <button id="spinBtn" onclick="spin()">GIRAR</button>
   <button id="elimBtn" onclick="toggleElimination()">ELIMINACIÓN: OFF</button>
   <button id="suddenBtn" onclick="toggleMuerteSubita()">☠ MUERTE SÚBITA: OFF</button>
   <button id="joinBtn" onclick="toggleJoin()">UNIRSE: ON</button>
-  <button id="subsSoonBtn" disabled title="Esta modalidad se habilitará más adelante">ACTIVAR RULETA SOLO SUSCRIPTORES · PRÓXIMAMENTE</button>
+  <button id="subsSoonBtn" disabled title="Esta modalidad se habilitará más adelante">✧ Solo suscriptores · PRÓXIMAMENTE</button>
 </div>
 
 </div>
 
-<div id="resultBox"><div id="resultText"></div></div>
+<div id="resultBox" role="status" aria-live="polite"><div id="resultText"></div></div>
 
 <button id="changeModeBtn" onclick="cambiarRuleta()">
 CAMBIAR RULETA
 </button>
 
 <div id="cortina">
-  <img src="logoshifu.png" id="cortinaLogo">
-  <div id="cargandoText">Cargando...</div>
+  <img src="logoshifu.png" id="cortinaLogo" alt="Zidoshifu">
 </div>
 
-<audio id="tickSound" src="tick.mp3"></audio>
-<audio id="bellSound" src="BELL.mp3"></audio>
+<audio id="tickSound" src="tick.mp3" preload="auto"></audio>
+<audio id="bellSound" src="BELL.mp3" preload="auto"></audio>
 <audio id="celebrationSound" src="celebration.mp3" preload="auto"></audio>
 
 <script>
@@ -674,8 +682,10 @@ db.ref(".info/connected").on("value", snap => {
 let players = [];
 let currentRotation = 0;
 let spinning = false;
+let cambiandoRuleta = false;
 let eliminationMode = false;
 let muerteSubita = false;
+let finalDisponibleAnterior = false;
 let joinEnabled = true;
 let updatingFromFirebase = false;
 let modoRuleta = "ban";
@@ -688,13 +698,14 @@ const spinBtn = document.getElementById("spinBtn");
 const colors = ["#2e1065","#4c1d95","#5b21b6","#6d28d9","#7c3aed","#8b5cf6","#a78bfa","#c4b5fd"];
 
 function normalizarJugadores(data){
-  if(Array.isArray(data)){
-    return data.map(x => String(x).trim()).filter(Boolean);
+  let lista = [];
+  if(Array.isArray(data)) lista = data;
+  else if(data && typeof data === "object"){
+    const keys = Object.keys(data);
+    lista = keys.every(key => /^\d+$/.test(key)) ? Object.values(data) : keys;
   }
-  if(data && typeof data === "object"){
-    return Object.keys(data).map(x => x.trim()).filter(Boolean);
-  }
-  return [];
+  return [...new Set(lista.filter(x => typeof x === "string")
+    .map(x => x.trim().toLowerCase()).filter(Boolean))];
 }
 
 function aplicarJugadores(data){
@@ -709,6 +720,7 @@ function aplicarJugadores(data){
 function aplicarEstadoUnirse(estado){
   joinEnabled = estado;
   const btn = document.getElementById("joinBtn");
+  btn.setAttribute("aria-pressed", String(estado));
   btn.innerText = joinEnabled ? "UNIRSE: ON" : "UNIRSE: OFF";
   btn.style.background = joinEnabled ? "#8b5cf6" : "#9333ea";
 
@@ -773,10 +785,10 @@ function aplicarModoRuleta(){
 
 input.addEventListener("input", () => {
   if (updatingFromFirebase || spinning) return;
-  const lista = input.value.split("\n").map(x => x.trim()).filter(Boolean);players = lista;
+  const lista = normalizarJugadores(input.value.split("\n"));players = lista;
   drawWheel();
   actualizarMuerteSubita();
-  db.ref("players").transaction(() => players);
+  db.ref("players").transaction(() => lista);
 });
 
 function toggleJoin(){
@@ -785,6 +797,8 @@ function toggleJoin(){
   db.ref("joinEnabled").set(joinEnabled);
 }
 function drawWheel(){
+  document.getElementById("emptyWheel").hidden = players.length > 0;
+  document.querySelector(".wheelHub").hidden = players.length === 0;
   if(!players.length){
     wheel.innerHTML="";
     wheel.style.background="transparent";
@@ -804,7 +818,7 @@ function drawWheel(){
     text.style.position="absolute";
     text.style.left="50%";
     text.style.top="50%";
-    text.style.transform=`rotate(${start+angle/2}deg) translate(0,-160px) rotate(90deg)`;
+    text.style.transform=`rotate(${start+angle/2}deg) translateY(calc(var(--wheel-size) * -0.335)) rotate(90deg)`;
 
     let size = 16;
     if (p.length > 10) size = 14;
@@ -829,16 +843,46 @@ function drawWheel(){
 const tickSound = document.getElementById("tickSound");
 const bellSound = document.getElementById("bellSound");
 const celebrationSound = document.getElementById("celebrationSound");
+let audioPreparado = false;
+
+function prepararAudio(){
+  if(audioPreparado) return;
+  audioPreparado = true;
+
+  // Se ejecuta dentro del clic en GIRAR para que Chrome permita los sonidos
+  // que se reproducirán al final de la animación.
+  [bellSound, celebrationSound].forEach(sonido => {
+    sonido.muted = true;
+    sonido.currentTime = 0;
+    const intento = sonido.play();
+    if(!intento) return;
+    intento.then(() => {
+      sonido.pause();
+      sonido.currentTime = 0;
+      sonido.muted = false;
+    }).catch(error => {
+      sonido.muted = false;
+      console.warn("No se pudo preparar el audio:", error);
+    });
+  });
+}
+
+function reproducirAudio(sonido, volumen = 1){
+  sonido.currentTime = 0;
+  sonido.volume = volumen;
+  sonido.play().catch(error => console.warn("Audio bloqueado o no disponible:", error));
+}
+
 let tickingRAF = null;
 let lastTickTime = 0;
 let lastSegment = -1;
 const SPIN_DURATION_SECONDS = 13.5;
-const SPIN_TURNS = 12;
 
 function toggleElimination(){
   if(spinning) return;
   eliminationMode = !eliminationMode;
   const btn = document.getElementById("elimBtn");
+  btn.setAttribute("aria-pressed", String(eliminationMode));
   btn.innerText = eliminationMode ? "ELIMINACIÓN: ON" : "ELIMINACIÓN: OFF";
   btn.style.background = eliminationMode ? "#8b5cf6" : "#9333ea";
   actualizarMuerteSubita();
@@ -847,22 +891,22 @@ function toggleElimination(){
 function actualizarMuerteSubita(){
   const btn = document.getElementById("suddenBtn");
   const disponible = eliminationMode && players.length === 2;
-
+  // Activa una sola vez al entrar a la final. Los refrescos no deshacen
+  // la elección manual de Zidoshifu mientras sigan los dos finalistas.
+  if(disponible && !finalDisponibleAnterior) muerteSubita = true;
+  if(!disponible) muerteSubita = false;
+  finalDisponibleAnterior = disponible;
   btn.classList.toggle("visible", disponible);
-
-  if(!disponible && muerteSubita){
-    muerteSubita = false;
-    btn.innerText = "☠ MUERTE SÚBITA: OFF";
-    btn.classList.remove("active");
-  }
+  btn.innerText = muerteSubita ? "☠ MUERTE SÚBITA: ON" : "☠ MUERTE SÚBITA: OFF";
+  btn.classList.toggle("active", muerteSubita);
+  btn.setAttribute("aria-pressed", String(muerteSubita));
+  btn.title = "Se activa automáticamente al quedar dos. Puedes apagarla para una final sin celebración especial; el señalado pierde y el otro gana.";
 }
 
 function toggleMuerteSubita(){
   if(spinning || !eliminationMode || players.length !== 2) return;
   muerteSubita = !muerteSubita;
-  const btn = document.getElementById("suddenBtn");
-  btn.innerText = muerteSubita ? "☠ MUERTE SÚBITA: ON" : "☠ MUERTE SÚBITA: OFF";
-  btn.classList.toggle("active", muerteSubita);
+  actualizarMuerteSubita();
 }
 
 function showResult(t){
@@ -874,6 +918,9 @@ function showResult(t){
 }
 
 function indiceAleatorio(maximo){
+  if(!Number.isSafeInteger(maximo) || maximo < 1 || maximo > 2 ** 32){
+    throw new RangeError("Rango aleatorio inválido");
+  }
   if(window.crypto && window.crypto.getRandomValues){
     const limite = Math.floor(2 ** 32 / maximo) * maximo;
     const valor = new Uint32Array(1);
@@ -882,10 +929,24 @@ function indiceAleatorio(maximo){
     } while(valor[0] >= limite);
     return valor[0] % maximo;
   }
-  return Math.floor(Math.random() * maximo);
+  throw new Error("Este navegador no dispone de azar seguro. Abre la ruleta en un navegador actualizado.");
+}
+
+function prepararSorteo(lista, rotacion){
+  const jugadores = normalizarJugadores(lista);
+  if(!jugadores.length) throw new Error("No hay participantes válidos.");
+  const indice = indiceAleatorio(jugadores.length);
+  const sector = 360 / jugadores.length;
+  // El ganador se elige primero. El movimiento nunca decide ni cambia su identidad.
+  const punto = .2 + indiceAleatorio(600001) / 1000000;
+  const objetivo = 270 - (indice + punto) * sector;
+  const ajuste = ((objetivo - rotacion) % 360 + 360) % 360;
+  return {jugadores, indice, duracion: 11 + indiceAleatorio(5001) / 1000,
+    rotacion: rotacion + 360 * (9 + indiceAleatorio(8)) + ajuste};
 }
 
 function spin(){
+  if(cambiandoRuleta) return;
   // --- CORRECCIÓN SOLICITADA: Bloqueo si Unirse está ON ---
   if (joinEnabled) {
     showResult("(UNIRSE: OFF) PARA GIRAR");
@@ -894,12 +955,24 @@ function spin(){
 
   if(!players.length || spinning) return;
 
-  if(eliminationMode && muerteSubita && players.length === 1){
+  if(eliminationMode && players.length === 1){
     showResult("GANADOR: " + players[0]);
     return;
   }
 
-  const jugadoresDelGiro = [...players];
+  let sorteo;
+  try {
+    sorteo = prepararSorteo(players, currentRotation);
+  } catch(error) {
+    showResult(error.message);
+    return;
+  }
+  const jugadoresDelGiro = sorteo.jugadores;
+  const modoDelGiro = modoRuleta;
+  const eliminacionDelGiro = eliminationMode;
+  const subitaDelGiro = muerteSubita;
+  aplicarJugadores(jugadoresDelGiro);
+  prepararAudio();
   spinning=true;
   input.disabled=true;
   startRealTicking();
@@ -907,16 +980,9 @@ function spin(){
   spinBtn.innerText="GIRANDO...";
   spinBtn.disabled=true;
 
-  const angle = 360 / jugadoresDelGiro.length;
-  const randomIndex = indiceAleatorio(jugadoresDelGiro.length);
-  const targetAngle = randomIndex * angle + angle / 2;
-
-  // Rotación: vueltas base + compensación para que el puntero (izquierda) marque bien
-  const targetRotation = 270 - targetAngle;
-  const ajuste = ((targetRotation - currentRotation) % 360 + 360) % 360;
-  const finalRotation = currentRotation + (360 * SPIN_TURNS) + ajuste;
-
-  wheel.style.transition = `transform ${SPIN_DURATION_SECONDS}s cubic-bezier(0.30, 0.02, 0.18, 1)`;
+  const randomIndex = sorteo.indice;
+  const finalRotation = sorteo.rotacion;
+  wheel.style.transition = `transform ${sorteo.duracion}s cubic-bezier(0.30, 0.02, 0.18, 1)`;
   wheel.style.transform=`rotate(${finalRotation}deg)`;
   currentRotation = finalRotation;
 
@@ -937,9 +1003,9 @@ function spin(){
       pendingPlayers = null;
     }
 
-    if(eliminationMode){
-      const finalMuerteSubita = muerteSubita && jugadoresDelGiro.length === 2;
-      const superviviente = finalMuerteSubita
+    if(eliminacionDelGiro){
+      const finalEliminacion = jugadoresDelGiro.length === 2;
+      const superviviente = finalEliminacion
         ? jugadoresDelGiro[1 - randomIndex]
         : null;
 
@@ -949,18 +1015,20 @@ function spin(){
       drawWheel();
       actualizarMuerteSubita();
 
-      if(finalMuerteSubita){
-        showResult("GANADOR: " + superviviente);
+      if(finalEliminacion){
+        showResult("ELIMINADO: " + ganador + " · GANADOR: " + superviviente);
         guardarHistorial(superviviente);
-        lanzarConfeti();
-        celebrationSound.currentTime = 0;
-        celebrationSound.play().catch(()=>{});
+        publicarResultado(superviviente, subitaDelGiro ? "muerte_subita" : "final_eliminacion", modoDelGiro);
+        if(subitaDelGiro){
+          lanzarConfeti();
+          reproducirAudio(celebrationSound, 1);
+        } else {
+          reproducirAudio(bellSound, 0.8);
+        }
       } else {
         showResult("ELIMINADO: " + ganador);
         guardarHistorial(ganador);
-        const sonidoEliminado = bellSound.cloneNode();
-        sonidoEliminado.volume = 0.8;
-        sonidoEliminado.play().catch(()=>{});
+        reproducirAudio(bellSound, 0.8);
       } 
         db.ref("players").transaction(current => {
           const lista = normalizarJugadores(current);
@@ -974,7 +1042,9 @@ function spin(){
       wheel.offsetHeight;
       wheel.style.transition = `transform ${SPIN_DURATION_SECONDS}s cubic-bezier(0.30, 0.02, 0.18, 1)`;
     } else {
-      showResult("GANÓ: " + ganador); guardarHistorial(ganador);
+      showResult("GANÓ: " + ganador);
+      guardarHistorial(ganador);
+      publicarResultado(ganador, "seleccionado", modoDelGiro);
     }
   });
 }
@@ -1066,23 +1136,49 @@ function guardarHistorial(nombre){
     return [nombre, ...historial].slice(0,5);
   });
 }
+
+function publicarResultado(nombre, tipo = "seleccionado", modo = modoRuleta){
+  db.ref("lastResult").set({
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    nombre: String(nombre).trim().toLowerCase(),
+    modo,
+    tipo,
+    timestamp: Date.now()
+  });
+}
 db.ref("history").on("value", snap => {
   renderizarHistorial(Array.isArray(snap.val()) ? snap.val().map(String) : []);
 });
 
 
-function cambiarRuleta(){
-  if(spinning) return;
+async function cambiarRuleta(){
+  if(spinning || cambiandoRuleta) return;
+  cambiandoRuleta = true;
   const cortina = document.getElementById("cortina");
+  const boton = document.getElementById("changeModeBtn");
+  const reducirMovimiento = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const pausa = ms => new Promise(resolve => setTimeout(resolve, ms));
+  boton.disabled = true;
+  boton.setAttribute("aria-busy", "true");
+  cortina.classList.remove("saliendo");
   cortina.classList.add("activa");
-  setTimeout(()=>{
+  await pausa(reducirMovimiento ? 0 : 450);
+  try {
     const modos = ["ban", "zing"];
-    modoRuleta = modos[(modos.indexOf(modoRuleta) + 1) % modos.length];
-    db.ref("modoRuleta").set(modoRuleta);
-  },600);
-  setTimeout(()=>{
-    cortina.classList.remove("activa");
-  },1200);
+    const siguiente = modos[(modos.indexOf(modoRuleta) + 1) % modos.length];
+    db.ref("modoRuleta").set(siguiente).catch(error => {
+      console.error("Error al cambiar ruleta:", error);
+      showResult("No se pudo guardar el cambio de ruleta.");
+    });
+    await pausa(reducirMovimiento ? 0 : 200);
+  } finally {
+    cortina.classList.add("saliendo");
+    await pausa(reducirMovimiento ? 0 : 450);
+    cortina.classList.remove("activa", "saliendo");
+    boton.disabled = false;
+    boton.removeAttribute("aria-busy");
+    cambiandoRuleta = false;
+  }
 }
 </script>
 </body>
