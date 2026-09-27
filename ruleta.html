@@ -424,6 +424,49 @@ textarea:focus {
   box-shadow: 0 18px 60px rgba(0,0,0,.45), 0 0 30px rgba(167, 139, 250, .32);
 }
 
+#winnerBox {
+  position: fixed;
+  inset: 0;
+  z-index: 2050;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(12, 7, 28, .88);
+  backdrop-filter: blur(12px);
+}
+#winnerBox[hidden] { display: none; }
+#winnerCard {
+  width: min(680px, 100%);
+  padding: clamp(32px, 6vw, 72px);
+  text-align: center;
+  border: 2px solid #e9c7ff;
+  border-radius: 28px;
+  background: radial-gradient(circle at top, #67348a, #251033 72%);
+  box-shadow: 0 0 90px #aa67e077, 0 30px 90px #0009;
+  animation: resultReveal .45s both;
+}
+.winnerLabel {
+  color: #f8d887;
+  font-size: clamp(14px, 2vw, 20px);
+  letter-spacing: .16em;
+  font-weight: bold;
+}
+#winnerName {
+  margin: 25px 0;
+  color: white;
+  font-size: clamp(38px, 8vw, 80px);
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+#winnerClose {
+  padding: 12px 28px;
+  border: 1px solid #e9c7ff;
+  border-radius: 10px;
+  background: #7c3aed;
+  color: white;
+  font: inherit;
+  cursor: pointer;
+}
 #confettiCanvas {
   position: fixed;
   inset: 0;
@@ -540,7 +583,7 @@ textarea:focus {
 <div id="botBox">
 <div id="botEstado"> BOT: DESCONECTADO</div>
 <div class="botRow"><span>Canal</span><span id="botCanal">-</span></div>
-<div class="botRow"><span>Versión</span><span id="botVersion">-</span></div>
+<div class="botRow"><span>Versión ruleta</span><span id="botVersion">4.5.1</span></div>
 <div class="botRow"><span>Jugadores</span><span id="playerCount">0</span></div>
 <div class="botRow"><span>Firebase</span><span id="firebaseStatus">CONECTANDO</span></div>
 </div>
@@ -587,6 +630,13 @@ textarea:focus {
 </div>
 
 <div id="resultBox" role="status" aria-live="polite"><div id="resultText"></div></div>
+<div id="winnerBox" role="dialog" aria-modal="true" aria-labelledby="winnerName" hidden>
+  <div id="winnerCard">
+    <div class="winnerLabel" id="winnerLabel">✦ GANADOR ✦</div>
+    <div id="winnerName"></div>
+    <button id="winnerClose" type="button" onclick="cerrarGanador()">CERRAR</button>
+  </div>
+</div>
 
 <button id="changeModeBtn" onclick="cambiarRuleta()">
 CAMBIAR RULETA
@@ -600,7 +650,9 @@ CAMBIAR RULETA
 <audio id="bellSound" src="BELL.mp3" preload="auto"></audio>
 <audio id="celebrationSound" src="celebration.mp3" preload="auto"></audio>
 
+
 <script>
+const VERSION_RULETA = "4.5.1";
 const firebaseConfig = {
   apiKey: "X",
   databaseURL: "https://ruleta-211c5-default-rtdb.firebaseio.com"
@@ -690,6 +742,8 @@ let joinEnabled = true;
 let updatingFromFirebase = false;
 let modoRuleta = "ban";
 let pendingPlayers = null;
+let ganadorPendiente = false;
+let listaAntesDeEditar = null;
 
 const wheel = document.getElementById("wheel");
 const input = document.getElementById("listInput");
@@ -708,9 +762,31 @@ function normalizarJugadores(data){
     .map(x => x.trim().toLowerCase()).filter(Boolean))];
 }
 
-function aplicarJugadores(data){
+function aplicarJugadores(data, conservarEntrada = false){
   players = normalizarJugadores(data);
-  input.value = players.join("\n");
+  if(!conservarEntrada){
+    if(document.activeElement === input){
+      const inicio = input.selectionStart;
+      const fin = input.selectionEnd;
+      const lineas = input.value.split("\n").filter(linea =>
+        !linea.trim() || players.includes(linea.trim().toLowerCase()));
+      const presentes = normalizarJugadores(lineas);
+      const nuevos = players.filter(nombre => !presentes.includes(nombre));
+      if(nuevos.length){
+        const ultimo = lineas.length - 1;
+        if(lineas[ultimo] === "") lineas.splice(ultimo, 0, ...nuevos);
+        else lineas.push(...nuevos);
+      }
+      const texto = lineas.join("\n");
+      if(input.value !== texto){
+        input.value = texto;
+        input.setSelectionRange(Math.min(inicio, texto.length), Math.min(fin, texto.length));
+      }
+      listaAntesDeEditar = normalizarJugadores(input.value.split("\n"));
+    } else {
+      input.value = players.join("\n");
+    }
+  }
   const contador = document.getElementById("playerCount");
   if(contador) contador.innerText = players.length;
   drawWheel();
@@ -783,12 +859,35 @@ function aplicarModoRuleta(){
   }
 }
 
+input.addEventListener("focus", () => {
+  listaAntesDeEditar = [...players];
+});
+
+function combinarEdicionJugadores(actual, anterior, editada){
+  const base = normalizarJugadores(anterior);
+  const nueva = normalizarJugadores(editada);
+  const eliminados = new Set(base.filter(nombre => !nueva.includes(nombre)));
+  const remotos = normalizarJugadores(actual).filter(nombre =>
+    !base.includes(nombre) && !eliminados.has(nombre));
+  return normalizarJugadores([...nueva, ...remotos]);
+}
+
+// Actualiza cada tecla sin reemplazar el texto ni borrar los saltos de línea.
 input.addEventListener("input", () => {
-  if (updatingFromFirebase || spinning) return;
-  const lista = normalizarJugadores(input.value.split("\n"));players = lista;
-  drawWheel();
-  actualizarMuerteSubita();
-  db.ref("players").transaction(() => lista);
+  if(updatingFromFirebase || spinning) return;
+  const anterior = listaAntesDeEditar || [...players];
+  const lista = normalizarJugadores(input.value.split("\n"));
+  listaAntesDeEditar = [...lista];
+  aplicarJugadores(combinarEdicionJugadores(players, anterior, lista), true);
+  db.ref("players").transaction(actual =>
+    combinarEdicionJugadores(actual, anterior, lista)
+  ).catch(error => {
+    console.error("Error guardando participantes:", error);
+    showResult("No se pudo guardar la lista. Revisa la conexión.");
+  });
+});
+input.addEventListener("blur", () => {
+  listaAntesDeEditar = null;
 });
 
 function toggleJoin(){
@@ -843,35 +942,28 @@ function drawWheel(){
 const tickSound = document.getElementById("tickSound");
 const bellSound = document.getElementById("bellSound");
 const celebrationSound = document.getElementById("celebrationSound");
-let audioPreparado = false;
-
 function prepararAudio(){
-  if(audioPreparado) return;
-  audioPreparado = true;
-
-  // Se ejecuta dentro del clic en GIRAR para que Chrome permita los sonidos
-  // que se reproducirán al final de la animación.
-  [bellSound, celebrationSound].forEach(sonido => {
-    sonido.muted = true;
-    sonido.currentTime = 0;
-    const intento = sonido.play();
-    if(!intento) return;
-    intento.then(() => {
-      sonido.pause();
-      sonido.currentTime = 0;
-      sonido.muted = false;
-    }).catch(error => {
-      sonido.muted = false;
-      console.warn("No se pudo preparar el audio:", error);
-    });
-  });
+  // El tick ya demuestra que los clones de <audio> funcionan en esta ruleta.
+  // Los archivos se cargan con preload="auto" y cada aviso usa su propia copia.
+  bellSound.load();
+  celebrationSound.load();
 }
 
-function reproducirAudio(sonido, volumen = 1){
-  sonido.currentTime = 0;
+function reproducirAudio(plantilla, volumen = 1){
+  const sonido = plantilla.cloneNode();
   sonido.volume = volumen;
-  sonido.play().catch(error => console.warn("Audio bloqueado o no disponible:", error));
+  sonido.currentTime = 0;
+  sonido.play().catch(error => {
+    console.warn("No se pudo reproducir " + plantilla.getAttribute("src") + ":", error);
+    showResult("Audio bloqueado: " + plantilla.getAttribute("src") + ". Revisa el navegador.");
+  });
+  return sonido;
 }
+
+function reproducirCelebracion(){
+  return reproducirAudio(celebrationSound, 1);
+}
+
 
 let tickingRAF = null;
 let lastTickTime = 0;
@@ -909,12 +1001,33 @@ function toggleMuerteSubita(){
   actualizarMuerteSubita();
 }
 
+let resultTimeout = null;
 function showResult(t){
   const box=document.getElementById("resultBox");
   const txt=document.getElementById("resultText");
   txt.innerText=t;
   box.classList.add("active");
-  setTimeout(()=>box.classList.remove("active"),3000);
+  if(resultTimeout) clearTimeout(resultTimeout);
+  resultTimeout = setTimeout(() => {
+    box.classList.remove("active");
+    resultTimeout = null;
+  }, 3000);
+}
+
+function cerrarGanador(){
+  document.getElementById("winnerBox").hidden = true;
+  ganadorPendiente = false;
+  spinBtn.focus();
+}
+
+function mostrarGanador(nombre, esMuerteSubita = false){
+  document.getElementById("winnerLabel").textContent = esMuerteSubita
+    ? "✦ GANADOR DE MUERTE SÚBITA ✦" : "✦ GANADOR DE LA RULETA ✦";
+  document.getElementById("winnerName").textContent = nombre;
+  document.getElementById("winnerBox").hidden = false;
+  document.getElementById("winnerClose").focus();
+  lanzarConfeti();
+  reproducirCelebracion();
 }
 
 function indiceAleatorio(maximo){
@@ -946,7 +1059,7 @@ function prepararSorteo(lista, rotacion){
 }
 
 function spin(){
-  if(cambiandoRuleta) return;
+  if(cambiandoRuleta || ganadorPendiente) return;
   // --- CORRECCIÓN SOLICITADA: Bloqueo si Unirse está ON ---
   if (joinEnabled) {
     showResult("(UNIRSE: OFF) PARA GIRAR");
@@ -956,7 +1069,9 @@ function spin(){
   if(!players.length || spinning) return;
 
   if(eliminationMode && players.length === 1){
-    showResult("GANADOR: " + players[0]);
+    prepararAudio();
+    ganadorPendiente = true;
+    mostrarGanador(players[0]);
     return;
   }
 
@@ -986,9 +1101,12 @@ function spin(){
   wheel.style.transform=`rotate(${finalRotation}deg)`;
   currentRotation = finalRotation;
 
-  wheel.addEventListener("transitionend", function handler(event){
-    if(event.propertyName !== "transform") return;
-    wheel.removeEventListener("transitionend", handler);
+  let giroTerminado = false;
+  const terminarGiro = event => {
+    if(giroTerminado || (event && event.propertyName !== "transform")) return;
+    giroTerminado = true;
+    clearTimeout(respaldoGiro);
+    wheel.removeEventListener("transitionend", terminarGiro);
     stopRealTicking();
 
     spinning=false;
@@ -1016,37 +1134,43 @@ function spin(){
       actualizarMuerteSubita();
 
       if(finalEliminacion){
-        showResult("ELIMINADO: " + ganador + " · GANADOR: " + superviviente);
+        showResult("ELIMINADO: " + ganador);
+        // La presentación local no depende de que Firebase permita guardar datos.
+        reproducirAudio(bellSound, 0.8);
+        ganadorPendiente = true;
+        setTimeout(() => mostrarGanador(superviviente, subitaDelGiro), 3200);
         guardarHistorial(superviviente);
         publicarResultado(superviviente, subitaDelGiro ? "muerte_subita" : "final_eliminacion", modoDelGiro);
-        if(subitaDelGiro){
-          lanzarConfeti();
-          reproducirAudio(celebrationSound, 1);
-        } else {
-          reproducirAudio(bellSound, 0.8);
-        }
       } else {
         showResult("ELIMINADO: " + ganador);
-        guardarHistorial(ganador);
         reproducirAudio(bellSound, 0.8);
+        guardarHistorial(ganador);
       } 
-        db.ref("players").transaction(current => {
-          const lista = normalizarJugadores(current);
-          const indice = lista.indexOf(ganador);
-          if(indice !== -1) lista.splice(indice, 1);
-          return lista;
-        });
+        try {
+          db.ref("players").transaction(current => {
+            const lista = normalizarJugadores(current);
+            const indice = lista.indexOf(ganador);
+            if(indice !== -1) lista.splice(indice, 1);
+            return lista;
+          }).catch(error => console.error("Error eliminando participante:", error));
+        } catch(error){
+          console.error("Error eliminando participante:", error);
+        }
       wheel.style.transition = "none";
       wheel.style.transform = "rotate(0deg)";
       currentRotation = 0;
       wheel.offsetHeight;
       wheel.style.transition = `transform ${SPIN_DURATION_SECONDS}s cubic-bezier(0.30, 0.02, 0.18, 1)`;
     } else {
-      showResult("GANÓ: " + ganador);
+      ganadorPendiente = true;
+      mostrarGanador(ganador);
       guardarHistorial(ganador);
       publicarResultado(ganador, "seleccionado", modoDelGiro);
     }
-  });
+  };
+  wheel.addEventListener("transitionend", terminarGiro);
+  // OBS o una pestaña oculta pueden omitir transitionend.
+  const respaldoGiro = setTimeout(terminarGiro, sorteo.duracion * 1000 + 500);
 }
 
 function startRealTicking(){
@@ -1066,7 +1190,7 @@ function startRealTicking(){
       if(now - lastTickTime > 70){ // Limita el audio sin perder tanto el ritmo de las casillas.
   lastTickTime = now;
 
-  const tick = tickSound.cloneNode();
+  const tick = tickSound;
 
   tick.volume = 0.16; // Más suave durante la aceleración.
 
@@ -1091,28 +1215,40 @@ function stopRealTicking(){
 
 
 // ===== BOT STATUS =====
-db.ref("bot").on("value", snap => {
- const data = snap.val() || {};
+let estadoBot = {};
+function actualizarEstadoBot(){
+ const data = estadoBot;
  document.getElementById("botCanal").innerText = data.canal || "-";
- document.getElementById("botVersion").innerText = data.version || "-";
+ document.getElementById("botVersion").innerText = VERSION_RULETA;
 
  const estado = document.getElementById("botEstado");
  const now = Math.floor(Date.now()/1000);
  const ping = data.last_ping || 0;
 
- if((now - ping) < 30){
+ if(data.online !== false && ping > 0 && (now - ping) < 30){
    estado.innerText = "BOT: ONLINE";
    estado.style.color = "#4ade80";
  } else {
    estado.innerText = "BOT: OFFLINE";
    estado.style.color = "#f87171";
  }
+}
+db.ref("bot").on("value", snap => {
+  estadoBot = snap.val() || {};
+  actualizarEstadoBot();
 });
+setInterval(actualizarEstadoBot, 5000);
 
-db.ref("players").on("value", snap => {
-  const el = document.getElementById("playerCount");
-  if(el) el.innerText = normalizarJugadores(snap.val()).length;
-});
+function normalizarHistorial(data){
+  let valores = [];
+  if(Array.isArray(data)) valores = Array.from(data);
+  else if(data && typeof data === "object"){
+    valores = Object.keys(data).filter(key => /^\d+$/.test(key))
+      .sort((a, b) => Number(a) - Number(b)).map(key => data[key]);
+  }
+  return valores.filter(nombre => typeof nombre === "string" && nombre.trim())
+    .map(nombre => nombre.trim()).slice(0, 5);
+}
 
 function renderizarHistorial(historial){
  const box = document.getElementById("historyList");
@@ -1130,24 +1266,32 @@ function renderizarHistorial(historial){
 }
 
 function guardarHistorial(nombre){
-  const ref = db.ref("history");
-  ref.transaction(actual => {
-    const historial = Array.isArray(actual) ? actual.map(String) : [];
-    return [nombre, ...historial].slice(0,5);
-  });
+  try {
+    db.ref("history").transaction(actual => {
+      const historial = normalizarHistorial(actual);
+      return [nombre, ...historial].slice(0,5);
+    }).catch(error => console.error("Error guardando historial:", error));
+  } catch(error){
+    console.error("Error guardando historial:", error);
+  }
 }
 
 function publicarResultado(nombre, tipo = "seleccionado", modo = modoRuleta){
-  db.ref("lastResult").set({
-    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    nombre: String(nombre).trim().toLowerCase(),
-    modo,
-    tipo,
-    timestamp: Date.now()
-  });
+  try {
+    db.ref("lastResult").set({
+      id: String(Date.now()) + "-" + Math.random().toString(36).slice(2, 8),
+      nombre: String(nombre).trim().toLowerCase(),
+      modo,
+      tipo,
+      timestamp: Date.now()
+    }).catch(error => console.error("Error publicando resultado:", error));
+  } catch(error){
+    console.error("Error publicando resultado:", error);
+  }
 }
+
 db.ref("history").on("value", snap => {
-  renderizarHistorial(Array.isArray(snap.val()) ? snap.val().map(String) : []);
+  renderizarHistorial(normalizarHistorial(snap.val()));
 });
 
 
