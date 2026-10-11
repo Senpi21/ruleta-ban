@@ -57,6 +57,13 @@ body::before{display:none}
 #chatDock{grid-column:1/-1;grid-row:6;min-width:0;height:600px;display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--line);border-radius:12px;background:#17121f}
 .chatHeading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 18px 14px}
 .chatHeading h2{font-size:17px;font-weight:600;letter-spacing:-.4px;margin:0 0 4px}
+.chatContent{flex:1;min-height:0;display:flex;flex-direction:column}
+.chatContent[hidden]{display:none}
+.chatToggle{display:grid;place-items:center;width:32px;height:32px;flex-shrink:0;border:1px solid #564064;border-radius:8px;background:#291c38;color:#ddc6f7;font:22px/1 'Segoe UI',Arial,sans-serif;cursor:pointer}
+.chatToggle:hover{background:#3b2752;border-color:#a779d5}
+.chatCollapsedLabel{display:none;color:#ddc6f7;font-size:11px;font-weight:600}
+body.chat-collapsed #chatDock{height:auto}
+body.chat-collapsed .chatHeading{padding:14px 16px}
 .chatChannel,.chatReadHint{font-size:10px;color:var(--muted)}
 .chatTabs{display:flex;gap:6px;padding:0 12px 12px;border-bottom:1px solid var(--line)}
 .chatTab{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:11px 12px;border:1px solid transparent;border-radius:8px;background:#22192f;color:var(--muted);font:600 12px 'Segoe UI',Arial,sans-serif;cursor:pointer;transition:background .15s,border-color .15s}
@@ -77,5 +84,7 @@ body::before{display:none}
 #chatReload:disabled{opacity:.4;cursor:default}
 @media(min-width:1250px){body{grid-template-columns:180px minmax(280px,1fr) 270px 330px;gap:20px;--wheel-size:clamp(280px,27vw,440px)}#chatDock{grid-column:4;grid-row:2/5;height:clamp(540px,68vh,720px);align-self:center}#container{padding-top:0}#wheelLogo{height:105px;margin-top:0}}
 @media(min-width:1600px){body{grid-template-columns:200px minmax(310px,1fr) 290px 350px;gap:24px;--wheel-size:clamp(310px,27vw,460px)}}
+@media(min-width:1250px){body.chat-collapsed{grid-template-columns:180px minmax(280px,1fr) 270px 104px;--wheel-size:clamp(320px,34vw,540px)}body.chat-collapsed #chatDock{align-self:start}body.chat-collapsed .chatHeading{padding:12px 10px;gap:8px}body.chat-collapsed .chatHeading>div{display:none}body.chat-collapsed .chatCollapsedLabel{display:block}}
+@media(min-width:1600px){body.chat-collapsed{grid-template-columns:200px minmax(310px,1fr) 290px 104px}}
 @media(max-width:900px){#chatDock{grid-row:7;height:580px}#changeModeBtn,#marcaSenpi{grid-row:8}}
 @media(max-width:620px){#chatDock{order:4;width:100%;height:570px;flex-shrink:0}#historyBox{order:5}#botBox{order:6}#changeModeBtn{order:7}#marcaSenpi{order:8}.chatHeading{padding:16px}.chatReadHint{font-size:9px}}

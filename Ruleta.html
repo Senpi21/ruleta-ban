@@ -7,7 +7,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
-<script src="ruleta-chat.js?v=4.5.1-chat2" defer></script>
+<script src="ruleta-chat.js?v=4.5.1-chat3" defer></script>
 
 <style>
 * { box-sizing: border-box; }
@@ -571,7 +571,7 @@ textarea:focus {
 
 
 </style>
-<link rel="stylesheet" href="ruleta-studio.css?v=4.5.1-chat2">
+<link rel="stylesheet" href="ruleta-studio.css?v=4.5.1-chat3">
 </head>
 
 <body>
@@ -636,8 +636,11 @@ textarea:focus {
       <h2 id="chatHeading">Chat del directo</h2>
       <span class="chatChannel">@zidoshifu</span>
     </div>
-    <span class="chatReadHint">Twitch y Kick</span>
+    <span class="chatCollapsedLabel" aria-hidden="true">Chats</span>
+    <button type="button" id="chatToggle" class="chatToggle" aria-expanded="true"
+      aria-controls="chatContent" aria-label="Minimizar chats" title="Minimizar chats">−</button>
   </div>
+  <div id="chatContent" class="chatContent">
   <div class="chatTabs" role="tablist" aria-label="Plataforma del chat">
     <button type="button" id="chatTabTwitch" class="chatTab" role="tab"
       data-chat-platform="twitch" aria-selected="true" aria-controls="chatPanelTwitch">
@@ -666,6 +669,7 @@ textarea:focus {
   <div class="chatFooter">
     <span id="chatFooterText">Chat de Twitch</span>
     <button type="button" id="chatReload" title="Recargar el chat que estás viendo" aria-label="Recargar chat de Twitch">↻ Recargar</button>
+  </div>
   </div>
 </section>
 

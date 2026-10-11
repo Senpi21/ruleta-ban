@@ -15,7 +15,10 @@
   const avisoTwitch = document.getElementById("chatTwitchNotice");
   const recargar = document.getElementById("chatReload");
   const pie = document.getElementById("chatFooterText");
+  const contenido = document.getElementById("chatContent");
+  const minimizar = document.getElementById("chatToggle");
   let activa = "twitch";
+  let minimizado = false;
 
   function direccionChat(plataforma){
     if(plataforma === "kick"){
@@ -83,6 +86,16 @@
   recargar.addEventListener("click", () => {
     const direccion = direccionChat(activa);
     if(direccion) marcos[activa].src = direccion;
+  });
+  minimizar.addEventListener("click", () => {
+    minimizado = !minimizado;
+    contenido.hidden = minimizado;
+    document.body.classList.toggle("chat-collapsed", minimizado);
+    minimizar.setAttribute("aria-expanded", String(!minimizado));
+    const accion = minimizado ? "Mostrar chats" : "Minimizar chats";
+    minimizar.setAttribute("aria-label", accion);
+    minimizar.title = accion;
+    minimizar.textContent = minimizado ? "+" : "−";
   });
   seleccionarChat(activa);
 })();
