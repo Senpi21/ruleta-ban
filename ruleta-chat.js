@@ -87,15 +87,19 @@
     const direccion = direccionChat(activa);
     if(direccion) marcos[activa].src = direccion;
   });
-  minimizar.addEventListener("click", () => {
-    minimizado = !minimizado;
-    contenido.hidden = minimizado;
-    document.body.classList.toggle("chat-collapsed", minimizado);
-    minimizar.setAttribute("aria-expanded", String(!minimizado));
-    const accion = minimizado ? "Mostrar chats" : "Minimizar chats";
-    minimizar.setAttribute("aria-label", accion);
-    minimizar.title = accion;
-    minimizar.textContent = minimizado ? "+" : "−";
-  });
+  // GitHub o el navegador pueden conservar el HTML previo durante una actualización.
+  // El control opcional no debe impedir que se carguen los chats.
+  if(minimizar && contenido){
+    minimizar.addEventListener("click", () => {
+      minimizado = !minimizado;
+      contenido.hidden = minimizado;
+      document.body.classList.toggle("chat-collapsed", minimizado);
+      minimizar.setAttribute("aria-expanded", String(!minimizado));
+      const accion = minimizado ? "Mostrar chats" : "Minimizar chats";
+      minimizar.setAttribute("aria-label", accion);
+      minimizar.title = accion;
+      minimizar.textContent = minimizado ? "+" : "−";
+    });
+  }
   seleccionarChat(activa);
 })();
