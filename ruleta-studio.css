@@ -25,6 +25,9 @@ body::before{opacity:.35;background-image:radial-gradient(rgba(183,151,224,.18) 
 #changeModeBtn{position:static;grid-column:3;grid-row:5;width:100%;background:none;border:1px solid var(--line);box-shadow:none;font-size:10px;color:#cabadc;padding:12px;z-index:auto}#marcaSenpi{position:static;grid-column:1/3;grid-row:5;align-self:center;text-align:left;font:10px/1.8 'Segoe UI',Arial,sans-serif;color:var(--muted);z-index:auto}#marcaSenpi span{font-size:10px;color:#998aa7}
 #resultBox{backdrop-filter:blur(10px);background:#0e091cbb}#resultText{min-width:0;width:min(620px,88vw);padding:55px 32px;background:linear-gradient(145deg,#342146,#1b1226);border:1px solid #a784c9;border-radius:24px;box-shadow:0 30px 100px #0007;font-size:clamp(22px,4vw,42px);letter-spacing:-1px;overflow-wrap:anywhere}#resultText:before{content:'✦  ZIDOSHIFU  ✦';display:block;font-size:11px;letter-spacing:4px;color:#e8ca9d;margin-bottom:24px}
 button:focus-visible{outline:2px solid #f2d6a7;outline-offset:4px}
+#subsSoonBtn:hover:not(:disabled){color:#ead9ff}
+#subsSoonBtn[aria-pressed=true]{color:#facc15}
+.subSponsorBox{padding:14px;border:1px solid #73582e;border-radius:10px;background:#292019;color:#f4ddb2;font-size:12px;line-height:1.6;overflow-wrap:anywhere}.subSponsorBox[hidden]{display:none}.subSponsorBox strong{display:block;font-size:10px;letter-spacing:.5px}.subSponsorBox p{margin:8px 0;color:#c4b4a1;font-size:11px}.subSponsorActions{display:flex;gap:8px;flex-wrap:wrap}#panel .subSponsorActions button{padding:9px 10px;background:#49335e;color:#f5f0ff;border:1px solid #8b6ba5;border-radius:8px;font-size:10px}#panel .subSponsorActions button[hidden]{display:none}
 /* Presentación simple con los ocho colores originales, incluso sin jugadores. */
 body::before{display:none}
 .wheelShell{box-shadow:0 12px 32px #0004}

@@ -571,7 +571,7 @@ textarea:focus {
 
 
 </style>
-<link rel="stylesheet" href="ruleta-studio.css?v=4.5.1-chat4">
+<link rel="stylesheet" href="ruleta-studio.css?v=4.5.1-subs2">
 </head>
 
 <body>
@@ -625,7 +625,17 @@ textarea:focus {
   <button id="elimBtn" onclick="toggleElimination()">ELIMINACIÓN: OFF</button>
   <button id="suddenBtn" onclick="toggleMuerteSubita()">☠ MUERTE SÚBITA: OFF</button>
   <button id="joinBtn" onclick="toggleJoin()">UNIRSE: ON</button>
-  <button id="subsSoonBtn" disabled title="Esta modalidad se habilitará más adelante">✧ Solo suscriptores · PRÓXIMAMENTE</button>
+  <button id="subsSoonBtn" type="button" onclick="cambiarRuleta('subs')" aria-pressed="false" title="Sorteo de una suscripción patrocinada">✧ RULETA DE SUBS · !sub</button>
+  <div id="subSponsorBox" class="subSponsorBox" role="status" aria-live="polite" hidden>
+    <strong id="subSponsorTitle"></strong>
+    <div id="subSponsorName"></div>
+    <p id="subSponsorHint"></p>
+    <div class="subSponsorActions">
+      <button id="subAcceptBtn" type="button" onclick="gestionarPatrocinioSub(true)">ACEPTAR SORTEO</button>
+      <button id="subRejectBtn" type="button" onclick="gestionarPatrocinioSub(false)">RECHAZAR</button>
+      <button id="subNewRoundBtn" type="button" onclick="nuevaSub()" title="Prepara otra sub y vacía solo los participantes de SUBS">NUEVA SUB</button>
+    </div>
+  </div>
 </div>
 
 </div>
@@ -788,6 +798,9 @@ let modoRuleta = "ban";
 let pendingPlayers = null;
 let ganadorPendiente = false;
 let listaAntesDeEditar = null;
+let sorteoSub = null;
+let patrocinioSubInicializado = false;
+let procesandoPatrocinioSub = false;
 
 const wheel = document.getElementById("wheel");
 const input = document.getElementById("listInput");
@@ -881,10 +894,14 @@ db.ref("modoRuleta").on("value", snap => {
 function aplicarModoRuleta(){
   const info = document.getElementById("infoBox");
   const header = document.querySelector("#header h1");
+  const subsBtn = document.getElementById("subsSoonBtn");
+  subsBtn.setAttribute("aria-pressed", String(modoRuleta === "subs"));
+  subsBtn.textContent = modoRuleta === "subs"
+    ? "✧ RULETA DE SUBS · ACTIVA" : "✧ RULETA DE SUBS · !sub";
 
   if(modoRuleta === "subs"){
     header.innerText = "Ruleta de SUBS - Zidoshifu";
-    info.innerHTML = "<b>RULETA DE SUBS</b><br>Solo suscriptores: escribe <b>!sub</b> para entrar";
+    info.innerHTML = "<b>GANA UNA SUB PATROCINADA</b><br>Para patrocinar: <b>!regalarsub</b><br>Tras aceptar la streamer: <b>!sub</b> para participar. No necesitas tener sub.";
     info.style.border = "1px solid #facc15";
     info.style.boxShadow = "0 0 25px rgba(250,204,21,0.65)";
     info.style.background = "rgba(113,63,18,0.9)";
@@ -901,6 +918,99 @@ function aplicarModoRuleta(){
     info.style.boxShadow = "0 0 20px rgba(167,139,250,0.4)";
     info.style.background = "rgba(30,41,59,0.9)";
   }
+  actualizarPatrocinioSub();
+}
+
+function actualizarPatrocinioSub(){
+  const box = document.getElementById("subSponsorBox");
+  box.hidden = modoRuleta !== "subs";
+  if(box.hidden) return;
+  const estado = sorteoSub?.estado;
+  document.getElementById("subSponsorTitle").textContent = {
+    pendiente: "SOLICITUD DE SUB PATROCINADA",
+    aceptada: "SORTEO ACEPTADO",
+    rechazada: "SORTEO RECHAZADO O CANCELADO",
+    finalizada: "SUB SORTEADA",
+  }[estado] || "ESPERANDO PATROCINIO";
+  document.getElementById("subSponsorName").textContent = sorteoSub?.patrocinador
+    ? "Patrocinador: @" + sorteoSub.patrocinador : "Quien quiera regalar una sub escribe !regalarsub.";
+  document.getElementById("subSponsorHint").textContent = {
+    pendiente: "Tú decides si hacer la ruleta. El aviso no confirma un pago en Twitch.",
+    aceptada: "Participan con !sub mientras UNIRSE esté en ON. Ponlo en OFF para girar.",
+    rechazada: "No se admiten entradas. Pulsa NUEVA SUB para permitir otra solicitud.",
+    finalizada: "Ganador: " + (sorteoSub?.ganador || "") + ". Pulsa NUEVA SUB para otro sorteo.",
+  }[estado] || "Solo se admite una solicitud por sorteo. Primero debes aceptarla.";
+  const aceptar = document.getElementById("subAcceptBtn");
+  const rechazar = document.getElementById("subRejectBtn");
+  const nueva = document.getElementById("subNewRoundBtn");
+  aceptar.hidden = estado !== "pendiente";
+  rechazar.hidden = !["pendiente", "aceptada"].includes(estado);
+  rechazar.textContent = estado === "aceptada" ? "CANCELAR SORTEO" : "RECHAZAR";
+  nueva.hidden = !["rechazada", "finalizada"].includes(estado);
+  for(const boton of [aceptar, rechazar, nueva]) boton.disabled = procesandoPatrocinioSub;
+}
+
+db.ref("subGiveaway").on("value", snap => {
+  const anterior = sorteoSub?.id;
+  sorteoSub = snap.val();
+  actualizarPatrocinioSub();
+  if(patrocinioSubInicializado && modoRuleta === "subs" && sorteoSub?.estado === "pendiente" && sorteoSub.id !== anterior){
+    showResult("@" + sorteoSub.patrocinador + " quiere patrocinar una sub. Acepta o rechaza la solicitud en los controles.");
+  }
+  patrocinioSubInicializado = true;
+});
+
+function resolverPatrocinioSub(actual, id, aceptar){
+  if(!actual || actual.modoRuleta !== "subs" || actual.subGiveaway?.id !== id) return;
+  const estadoActual = actual.subGiveaway.estado;
+  if(aceptar ? estadoActual !== "pendiente" : !["pendiente", "aceptada"].includes(estadoActual)) return;
+  const estado = {...actual, subGiveaway: {...actual.subGiveaway,
+    estado: aceptar ? "aceptada" : "rechazada"}};
+  if(aceptar){
+    estado.subGiveaway.aceptadoEn = Date.now();
+    estado.players = [];
+    estado.subsPlayers = [];
+    estado.joinEnabled = true;
+  } else {
+    estado.joinEnabled = false;
+  }
+  return estado;
+}
+
+function prepararNuevaSub(actual, id){
+  if(!actual || actual.modoRuleta !== "subs" || actual.subGiveaway?.id !== id ||
+      !["rechazada", "finalizada"].includes(actual.subGiveaway.estado)) return;
+  return {...actual, subGiveaway: null, players: [], subsPlayers: [], joinEnabled: false};
+}
+
+async function guardarDecisionSub(callback){
+  if(modoRuleta !== "subs" || procesandoPatrocinioSub) return;
+  if(spinning || cambiandoRuleta || ganadorPendiente){
+    showResult("Termina el giro y cierra el ganador antes de cambiar el sorteo de sub.");
+    return;
+  }
+  procesandoPatrocinioSub = true;
+  actualizarPatrocinioSub();
+  try {
+    const resultado = await db.ref("/").transaction(callback);
+    if(!resultado.committed) showResult("Esta solicitud ya cambió. Revisa el estado actual.");
+  } catch(error){
+    console.error("Error gestionando sub:", error);
+    showResult("No se pudo guardar la decisión. Revisa la conexión.");
+  } finally {
+    procesandoPatrocinioSub = false;
+    actualizarPatrocinioSub();
+  }
+}
+
+function gestionarPatrocinioSub(aceptar){
+  const id = sorteoSub?.id;
+  return guardarDecisionSub(actual => resolverPatrocinioSub(actual, id, aceptar));
+}
+
+function nuevaSub(){
+  const id = sorteoSub?.id;
+  return guardarDecisionSub(actual => prepararNuevaSub(actual, id));
 }
 
 input.addEventListener("focus", () => {
@@ -1064,9 +1174,10 @@ function cerrarGanador(){
   spinBtn.focus();
 }
 
-function mostrarGanador(nombre, esMuerteSubita = false){
-  document.getElementById("winnerLabel").textContent = esMuerteSubita
-    ? "✦ GANADOR DE MUERTE SÚBITA ✦" : "✦ GANADOR DE LA RULETA ✦";
+function mostrarGanador(nombre, esMuerteSubita = false, modo = modoRuleta){
+  document.getElementById("winnerLabel").textContent = modo === "subs"
+    ? (esMuerteSubita ? "🎁 GANASTE UNA SUB · MUERTE SÚBITA 🎁" : "🎁 GANASTE UNA SUB PATROCINADA 🎁")
+    : (esMuerteSubita ? "✦ GANADOR DE MUERTE SÚBITA ✦" : "✦ GANADOR DE LA RULETA ✦");
   document.getElementById("winnerName").textContent = nombre;
   document.getElementById("winnerBox").hidden = false;
   document.getElementById("winnerClose").focus();
@@ -1111,11 +1222,19 @@ function spin(){
   }
 
   if(!players.length || spinning) return;
+  if(modoRuleta === "subs" && sorteoSub?.estado !== "aceptada"){
+    showResult("Primero debes aceptar una solicitud de sub patrocinada.");
+    return;
+  }
 
   if(eliminationMode && players.length === 1){
     prepararAudio();
     ganadorPendiente = true;
     mostrarGanador(players[0]);
+    if(modoRuleta === "subs"){
+      guardarHistorial(players[0]);
+      publicarResultado(players[0], "seleccionado", "subs", sorteoSub.id);
+    }
     return;
   }
 
@@ -1128,6 +1247,7 @@ function spin(){
   }
   const jugadoresDelGiro = sorteo.jugadores;
   const modoDelGiro = modoRuleta;
+  const subDelGiro = modoDelGiro === "subs" ? sorteoSub.id : null;
   const eliminacionDelGiro = eliminationMode;
   const subitaDelGiro = muerteSubita;
   aplicarJugadores(jugadoresDelGiro);
@@ -1182,9 +1302,9 @@ function spin(){
         // La presentación local no depende de que Firebase permita guardar datos.
         reproducirAudio(bellSound, 0.8);
         ganadorPendiente = true;
-        setTimeout(() => mostrarGanador(superviviente, subitaDelGiro), 3200);
+        setTimeout(() => mostrarGanador(superviviente, subitaDelGiro, modoDelGiro), 3200);
         guardarHistorial(superviviente);
-        publicarResultado(superviviente, subitaDelGiro ? "muerte_subita" : "final_eliminacion", modoDelGiro);
+        publicarResultado(superviviente, subitaDelGiro ? "muerte_subita" : "final_eliminacion", modoDelGiro, subDelGiro);
       } else {
         showResult("ELIMINADO: " + ganador);
         reproducirAudio(bellSound, 0.8);
@@ -1207,9 +1327,9 @@ function spin(){
       wheel.style.transition = `transform ${SPIN_DURATION_SECONDS}s cubic-bezier(0.30, 0.02, 0.18, 1)`;
     } else {
       ganadorPendiente = true;
-      mostrarGanador(ganador);
+      mostrarGanador(ganador, false, modoDelGiro);
       guardarHistorial(ganador);
-      publicarResultado(ganador, "seleccionado", modoDelGiro);
+      publicarResultado(ganador, "seleccionado", modoDelGiro, subDelGiro);
     }
   };
   wheel.addEventListener("transitionend", terminarGiro);
@@ -1320,15 +1440,26 @@ function guardarHistorial(nombre){
   }
 }
 
-function publicarResultado(nombre, tipo = "seleccionado", modo = modoRuleta){
+function publicarResultado(nombre, tipo = "seleccionado", modo = modoRuleta, subId = null){
   try {
-    db.ref("lastResult").set({
+    const resultado = {
       id: String(Date.now()) + "-" + Math.random().toString(36).slice(2, 8),
       nombre: String(nombre).trim().toLowerCase(),
       modo,
       tipo,
       timestamp: Date.now()
-    }).catch(error => console.error("Error publicando resultado:", error));
+    };
+    if(modo === "subs"){
+      db.ref("/").transaction(actual => {
+        if(!actual || actual.subGiveaway?.id !== subId || actual.subGiveaway.estado !== "aceptada") return;
+        const estado = {...actual, lastResult: resultado, subGiveaway: {...actual.subGiveaway,
+          estado: "finalizada", ganador: resultado.nombre}};
+        if(estado.modoRuleta === "subs") estado.joinEnabled = false;
+        return estado;
+      }).catch(error => console.error("Error publicando resultado de sub:", error));
+    } else {
+      db.ref("lastResult").set(resultado).catch(error => console.error("Error publicando resultado:", error));
+    }
   } catch(error){
     console.error("Error publicando resultado:", error);
   }
@@ -1339,31 +1470,58 @@ db.ref("history").on("value", snap => {
 });
 
 
-async function cambiarRuleta(){
+function prepararCambioRuleta(actual, modoObjetivo = null){
+  if(actual !== null && (typeof actual !== "object" || Array.isArray(actual))){
+    throw new Error("El estado de la ruleta no es válido.");
+  }
+  const estado = {...(actual || {})};
+  const modos = ["ban", "zing", "subs"];
+  const anterior = estado.modoRuleta || "ban";
+  const siguiente = modoObjetivo ?? modos[(modos.indexOf(anterior) + 1) % modos.length];
+  if(!modos.includes(siguiente)) throw new Error("Modalidad no válida.");
+
+  // BAN y ZING conservan su lista compartida; SUBS guarda la suya por separado.
+  // Lista y modalidad cambian juntas para revalidar las entradas del bot.
+  if(anterior !== "subs" && siguiente === "subs"){
+    estado.regularPlayers = normalizarJugadores(estado.players);
+    estado.players = normalizarJugadores(estado.subsPlayers);
+  } else if(anterior === "subs" && siguiente !== "subs"){
+    estado.subsPlayers = normalizarJugadores(estado.players);
+    estado.players = normalizarJugadores(estado.regularPlayers);
+  }
+  estado.modoRuleta = siguiente;
+  return estado;
+}
+
+async function cambiarRuleta(modoObjetivo = null){
   if(spinning || cambiandoRuleta) return;
+  if(modoObjetivo === modoRuleta) return;
   cambiandoRuleta = true;
   const cortina = document.getElementById("cortina");
   const boton = document.getElementById("changeModeBtn");
   const reducirMovimiento = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const pausa = ms => new Promise(resolve => setTimeout(resolve, ms));
   boton.disabled = true;
+  input.disabled = true;
   boton.setAttribute("aria-busy", "true");
   cortina.classList.remove("saliendo");
   cortina.classList.add("activa");
   await pausa(reducirMovimiento ? 0 : 450);
   try {
-    const modos = ["ban", "zing"];
-    const siguiente = modos[(modos.indexOf(modoRuleta) + 1) % modos.length];
-    db.ref("modoRuleta").set(siguiente).catch(error => {
+    db.ref("/").transaction(actual => prepararCambioRuleta(actual, modoObjetivo)).catch(error => {
       console.error("Error al cambiar ruleta:", error);
       showResult("No se pudo guardar el cambio de ruleta.");
     });
     await pausa(reducirMovimiento ? 0 : 200);
+  } catch(error){
+    console.error("Error al cambiar ruleta:", error);
+    showResult("No se pudo guardar el cambio de ruleta.");
   } finally {
     cortina.classList.add("saliendo");
     await pausa(reducirMovimiento ? 0 : 450);
     cortina.classList.remove("activa", "saliendo");
     boton.disabled = false;
+    input.disabled = false;
     boton.removeAttribute("aria-busy");
     cambiandoRuleta = false;
   }
