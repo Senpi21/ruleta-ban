@@ -961,7 +961,7 @@ db.ref("subGiveaway").on("value", snap => {
 });
 
 function resolverPatrocinioSub(actual, id, aceptar){
-  if(!actual || actual.modoRuleta !== "subs" || actual.subGiveaway?.id !== id) return;
+  if(!id || !actual || actual.modoRuleta !== "subs" || actual.subGiveaway?.id !== id) return;
   const estadoActual = actual.subGiveaway.estado;
   if(aceptar ? estadoActual !== "pendiente" : !["pendiente", "aceptada"].includes(estadoActual)) return;
   const estado = {...actual, subGiveaway: {...actual.subGiveaway,
@@ -978,9 +978,29 @@ function resolverPatrocinioSub(actual, id, aceptar){
 }
 
 function prepararNuevaSub(actual, id){
-  if(!actual || actual.modoRuleta !== "subs" || actual.subGiveaway?.id !== id ||
+  if(!id || !actual || actual.modoRuleta !== "subs" || actual.subGiveaway?.id !== id ||
       !["rechazada", "finalizada"].includes(actual.subGiveaway.estado)) return;
   return {...actual, subGiveaway: null, players: [], subsPlayers: [], joinEnabled: false};
+}
+
+async function transaccionEstadoSub(callback){
+  const raiz = db.ref("/");
+  let recibirEstado;
+  let espera;
+  try {
+    // Escuchar las ramas por separado no carga la raíz para una transacción.
+    // Mantener la escucha hasta guardar evita confundir una caché vacía con una ronda cambiada.
+    await new Promise((resolve, reject) => {
+      recibirEstado = () => resolve();
+      espera = setTimeout(() => reject(new Error("Tiempo agotado al cargar el estado de Firebase.")), 10000);
+      raiz.on("value", recibirEstado, reject);
+    });
+    clearTimeout(espera);
+    return await raiz.transaction(callback, undefined, false);
+  } finally {
+    clearTimeout(espera);
+    raiz.off("value", recibirEstado);
+  }
 }
 
 async function guardarDecisionSub(callback){
@@ -992,11 +1012,11 @@ async function guardarDecisionSub(callback){
   procesandoPatrocinioSub = true;
   actualizarPatrocinioSub();
   try {
-    const resultado = await db.ref("/").transaction(callback);
+    const resultado = await transaccionEstadoSub(callback);
     if(!resultado.committed) showResult("Esta solicitud ya cambió. Revisa el estado actual.");
   } catch(error){
     console.error("Error gestionando sub:", error);
-    showResult("No se pudo guardar la decisión. Revisa la conexión.");
+    showResult("No se pudo guardar la decisión en Firebase. Revisa la conexión y los permisos.");
   } finally {
     procesandoPatrocinioSub = false;
     actualizarPatrocinioSub();
@@ -1450,13 +1470,18 @@ function publicarResultado(nombre, tipo = "seleccionado", modo = modoRuleta, sub
       timestamp: Date.now()
     };
     if(modo === "subs"){
-      db.ref("/").transaction(actual => {
-        if(!actual || actual.subGiveaway?.id !== subId || actual.subGiveaway.estado !== "aceptada") return;
+      return transaccionEstadoSub(actual => {
+        if(!subId || !actual || actual.subGiveaway?.id !== subId || actual.subGiveaway.estado !== "aceptada") return;
         const estado = {...actual, lastResult: resultado, subGiveaway: {...actual.subGiveaway,
           estado: "finalizada", ganador: resultado.nombre}};
         if(estado.modoRuleta === "subs") estado.joinEnabled = false;
         return estado;
-      }).catch(error => console.error("Error publicando resultado de sub:", error));
+      }).then(({committed}) => {
+        if(!committed) showResult("El resultado no se guardó porque la ronda de SUBS cambió.");
+      }).catch(error => {
+        console.error("Error publicando resultado de sub:", error);
+        showResult("No se pudo guardar el ganador de SUBS en Firebase.");
+      });
     } else {
       db.ref("lastResult").set(resultado).catch(error => console.error("Error publicando resultado:", error));
     }
